@@ -140,7 +140,7 @@
             ],
             "properties": {
                 "action": {
-                    "description": "必填 0: GooseFSDistributeLoad 1: GooseFSLoadMetadata",
+                    "description": "必填 0: GooseFSDistributeLoad 1: GooseFSLoadMetadata 2: GooseFSList",
                     "type": "integer"
                 },
                 "path": {

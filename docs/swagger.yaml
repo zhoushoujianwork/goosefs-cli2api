@@ -9,7 +9,7 @@ definitions:
   models.GooseFSRequest:
     properties:
       action:
-        description: '必填 0: GooseFSDistributeLoad 1: GooseFSLoadMetadata'
+        description: '必填 0: GooseFSDistributeLoad 1: GooseFSLoadMetadata 2: GooseFSList'
         type: integer
       path:
         description: 当 action 为 GooseFSDistributeLoad/GooseFSLoadMetadata/GooseFSList
