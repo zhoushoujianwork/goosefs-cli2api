@@ -30,7 +30,8 @@ func StartTaskManager() {
 	// 可以扩展任务清理逻辑等
 }
 
-func AddTask(req TaskRequest) (string, error) {
+// 只允许内部调用，不允许外部传入所有指令，防止执行影响系统的指令
+func addTask(req TaskRequest) (string, error) {
 	taskID := uuid.New().String()
 	cmd := exec.Command(req.Command, req.Args...)
 	tasksMutex.Lock()

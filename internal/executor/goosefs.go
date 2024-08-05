@@ -3,15 +3,15 @@ package executor
 import (
 	"fmt"
 	"goosefs-cli2api/config"
-	"log"
 	"time"
 )
 
 /*
 ./bin/goosefs fs distributedLoad --replication 1 /data-datalake/deltalake/aaa.db/bbb/
 */
+
 func DistrubuteLoad(path string) (string, error) {
-	return AddTask(TaskRequest{
+	return addTask(TaskRequest{
 		Command: *config.Config.Bin,
 		Args:    []string{"fs", "distributedLoad", "--replication", "1", path},
 	})
@@ -21,7 +21,7 @@ func DistrubuteLoad(path string) (string, error) {
 ./bin/goosefs fs loadMetadata -R /data-datalake/deltalake/aaa.db/bbb/
 */
 func LoadMetadata(path string) (string, error) {
-	return AddTask(TaskRequest{
+	return addTask(TaskRequest{
 		Command: *config.Config.Bin,
 		Args:    []string{"fs", "loadMetadata", "-R", path},
 	})
@@ -31,7 +31,7 @@ func LoadMetadata(path string) (string, error) {
 ./bin/goosefs fsadmin report
 */
 func Report() (string, error) {
-	taskid, err := AddTask(TaskRequest{
+	taskid, err := addTask(TaskRequest{
 		Command: *config.Config.Bin,
 		Args:    []string{"fsadmin", "report"},
 	})
@@ -51,7 +51,7 @@ func Report() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		log.Println("task status:", status.Status)
+		// log.Println("task status:", status.Status)
 		if status.Status == "exit status 0" {
 			break
 		}

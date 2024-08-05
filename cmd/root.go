@@ -4,8 +4,10 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"fmt"
 	"goosefs-cli2api/internal/api"
 	"goosefs-cli2api/internal/executor"
+	"log"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -23,11 +25,16 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
+		if debug {
+			gin.SetMode(gin.DebugMode)
+		} else {
+			gin.SetMode(gin.ReleaseMode)
+		}
 		r := gin.Default()
 		api.RegisterRoutes(r)          // 注册API路由
 		go executor.StartTaskManager() // 启动任务管理器，负责任务的调度和状态管理
-
-		if err := r.Run(); err != nil {
+		log.Printf("api server start on http://localhost:%d\n", port)
+		if err := r.Run(fmt.Sprintf("0.0.0.0:%d", port)); err != nil {
 			panic(err)
 		}
 	},
@@ -42,6 +49,11 @@ func Execute() {
 	}
 }
 
+var (
+	debug bool
+	port  int
+)
+
 func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
@@ -52,4 +64,6 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "debug mode")
+	rootCmd.PersistentFlags().IntVarP(&port, "port", "p", 8080, "api server port")
 }

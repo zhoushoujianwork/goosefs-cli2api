@@ -1,4 +1,101 @@
+definitions:
+  executor.TaskStatus:
+    properties:
+      id:
+        type: string
+      status:
+        type: string
+    type: object
+  models.GooseFSRequest:
+    properties:
+      action:
+        description: '必填 0: GooseFSDistributeLoad 1: GooseFSLoadMetadata'
+        type: integer
+      path:
+        description: 当 action 为 GooseFSDistributeLoad/GooseFSLoadMetadata 时必填
+        type: string
+    required:
+    - action
+    type: object
+host: localhost:8080
 info:
   contact: {}
-paths: {}
+  termsOfService: http://swagger.io/terms/
+  title: GooseFS-CLI2API
+  version: v1
+paths:
+  /api/v1/gfs:
+    post:
+      consumes:
+      - application/json
+      description: 执行内置的 goosefs 命令，包括 distribute_load/load_metadata，返回 task_id，可以通过
+        task_id 获取执行状态或者输出
+      parameters:
+      - description: DistrubuteLoad
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/models.GooseFSRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: execute for goosefs cli
+      tags:
+      - GooseFS
+  /api/v1/gfs/report:
+    get:
+      consumes:
+      - application/json
+      description: GooseFSReport 获取 goosefs 集群状态
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: GooseFSReport
+      tags:
+      - GooseFS
+  /api/v1/output/{task_id}:
+    get:
+      consumes:
+      - application/json
+      description: GetTaskOutput
+      parameters:
+      - description: task_id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: GetTaskOutput
+  /api/v1/status/{task_id}:
+    get:
+      consumes:
+      - application/json
+      description: GetTaskStatus
+      parameters:
+      - description: task_id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/executor.TaskStatus'
+      summary: GetTaskStatus
 swagger: "2.0"

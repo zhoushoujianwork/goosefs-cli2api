@@ -10,21 +10,164 @@ const docTemplate = `{
     "info": {
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
+        "termsOfService": "http://swagger.io/terms/",
         "contact": {},
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
-    "paths": {}
+    "paths": {
+        "/api/v1/gfs": {
+            "post": {
+                "description": "执行内置的 goosefs 命令，包括 distribute_load/load_metadata，返回 task_id，可以通过 task_id 获取执行状态或者输出",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "GooseFS"
+                ],
+                "summary": "execute for goosefs cli",
+                "parameters": [
+                    {
+                        "description": "DistrubuteLoad",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.GooseFSRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/gfs/report": {
+            "get": {
+                "description": "GooseFSReport 获取 goosefs 集群状态",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "GooseFS"
+                ],
+                "summary": "GooseFSReport",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/v1/output/{task_id}": {
+            "get": {
+                "description": "GetTaskOutput",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "GetTaskOutput",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "task_id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/status/{task_id}": {
+            "get": {
+                "description": "GetTaskStatus",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "GetTaskStatus",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "task_id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/executor.TaskStatus"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "executor.TaskStatus": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.GooseFSRequest": {
+            "type": "object",
+            "required": [
+                "action"
+            ],
+            "properties": {
+                "action": {
+                    "description": "必填 0: GooseFSDistributeLoad 1: GooseFSLoadMetadata",
+                    "type": "integer"
+                },
+                "path": {
+                    "description": "当 action 为 GooseFSDistributeLoad/GooseFSLoadMetadata 时必填",
+                    "type": "string"
+                }
+            }
+        }
+    }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "",
-	Host:             "",
+	Version:          "v1",
+	Host:             "localhost:8080",
 	BasePath:         "",
 	Schemes:          []string{},
-	Title:            "",
+	Title:            "GooseFS-CLI2API",
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
