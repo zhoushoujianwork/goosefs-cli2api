@@ -153,8 +153,12 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "path": {
-                    "description": "当 action 为 GooseFSDistributeLoad/GooseFSLoadMetadata 时必填",
+                    "description": "当 action 为 GooseFSDistributeLoad/GooseFSLoadMetadata/GooseFSList 时必填",
                     "type": "string"
+                },
+                "timeout": {
+                    "description": "当 action 为 GooseFSList 由于没有挂起任务，所以需要指定超时时间 默认 30 秒",
+                    "type": "integer"
                 }
             }
         }

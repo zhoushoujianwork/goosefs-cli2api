@@ -1,4 +1,4 @@
 # bin: "/usr/local/service/goosefs/bin/goosefs"
 # /usr/local/service/goosefs-clusters/g_emr_z98d1f6i/goosefs/bin/goosefs
-bin: "/bin/echo"
+bin: "/bin/ls"
 output_dir: "/tmp"

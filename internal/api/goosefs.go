@@ -5,6 +5,7 @@ import (
 	"goosefs-cli2api/internal/models"
 	"net/http"
 
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/gin-gonic/gin"
 )
 
@@ -47,8 +48,23 @@ func GoosefsExecute(c *gin.Context) {
 			return
 		}
 		c.String(http.StatusOK, taskID)
+	case models.GooseFSList:
+		if req.Path == nil {
+			c.String(http.StatusBadRequest, "path is required")
+			return
+		}
+		if req.TimeOut == nil {
+			req.TimeOut = tea.Int(30) // 默认 30 秒
+		}
+		output, err := executor.List(*req.Path, *req.TimeOut)
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+		c.String(http.StatusOK, output)
+
 	default:
-		c.String(http.StatusBadRequest, "action not found, only support 0: GooseFSDistributeLoad 1: GooseFSLoadMetadata")
+		c.String(http.StatusBadRequest, "action not found, only support 0: GooseFSDistributeLoad 1: GooseFSLoadMetadata 2: GooseFSList")
 		return
 	}
 }
