@@ -1,0 +1,2 @@
+bin: "/usr/local/service/goosefs/bin/goosefs"
+output_dir: "/tmp"
