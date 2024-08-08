@@ -2,10 +2,13 @@ package api
 
 import (
 	"goosefs-cli2api/internal/executor"
+	"goosefs-cli2api/internal/models"
+	"log"
 	"net/http"
 
 	_ "goosefs-cli2api/docs"
 
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -19,8 +22,8 @@ func RegisterRoutes(router *gin.Engine) {
 		c.Next()
 	}, ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	a.GET("/status/:task_id", getTaskStatus)
-	a.GET("/output/:task_id", getTaskOutput)
+	a.GET("/status", getTaskStatus)
+	a.GET("/output", getTaskOutput)
 
 	a.POST("/gfs", GoosefsExecute)
 	a.GET("/gfs/report", GooseFSReport)
@@ -30,12 +33,25 @@ func RegisterRoutes(router *gin.Engine) {
 // @Description GetTaskStatus
 // @Accept json
 // @Produce json
-// @Param task_id path string true "task_id"
-// @Success 200 {object} executor.TaskStatus
-// @Router /api/v1/status/{task_id} [get]
+// @Param task_id query string true "task_id"
+// @Param task_name query string false "task_name"
+// @Success 200 {object} models.QueryTaskRequest
+// @Router /api/v1/status [get]
 func getTaskStatus(c *gin.Context) {
-	taskID := c.Param("task_id")
-	status, err := executor.GetTaskStatus(taskID)
+	var req models.QueryTaskRequest
+	taskID := c.Query("task_id")
+	if taskID != "" {
+		req.TaskID = &taskID
+	}
+	taskName := c.Query("task_name")
+	if taskName != "" {
+		req.TaskName = &taskName
+	}
+	if req.TaskID == nil && req.TaskName == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "task_id or task_name is required"})
+		return
+	}
+	status, err := executor.GetTaskStatus(req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -47,15 +63,29 @@ func getTaskStatus(c *gin.Context) {
 // @Description GetTaskOutput
 // @Accept json
 // @Produce json
-// @Param task_id path string true "task_id"
-// @Success 200 {string} string
-// @Router /api/v1/output/{task_id} [get]
+// @Param task_id query string true "task_id"
+// @Param task_name query string false "task_name"
+// @Success 200 {object} map[string]string
+// @Router /api/v1/output [get]
 func getTaskOutput(c *gin.Context) {
-	taskID := c.Param("task_id")
-	output, err := executor.GetTaskOutput(taskID)
+	var req models.QueryTaskRequest
+	taskID := c.Query("task_id")
+	if taskID != "" {
+		req.TaskID = &taskID
+	}
+	taskName := c.Query("task_name")
+	if taskName != "" {
+		req.TaskName = &taskName
+	}
+	log.Println(tea.Prettify(req))
+	if req.TaskID == nil && req.TaskName == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "task_id or task_name is required"})
+		return
+	}
+	output, err := executor.GetTaskOutput(req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.String(http.StatusOK, output)
+	c.JSON(http.StatusOK, output)
 }

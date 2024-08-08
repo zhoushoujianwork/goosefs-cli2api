@@ -3,29 +3,58 @@ package executor
 import (
 	"fmt"
 	"goosefs-cli2api/config"
+	"goosefs-cli2api/internal/models"
 	"log"
 	"time"
+
+	"github.com/alibabacloud-go/tea/tea"
 )
 
 /*
 ./bin/goosefs fs distributedLoad --replication 1 /data-datalake/deltalake/aaa.db/bbb/
+
+支持多路径 Path 任务提交，返回 1 个 task_id
 */
 
-func DistrubuteLoad(path string) (string, error) {
-	return addTask(TaskRequest{
-		Command: *config.Config.Bin,
-		Args:    []string{"fs", "distributedLoad", "--replication", "1", path},
-	})
+func DistrubuteLoad(req models.GooseFSRequest) ([]string, error) {
+	taskids := make([]string, 0)
+	for _, p := range req.Path {
+		if p == nil || *p == "" {
+			return nil, fmt.Errorf("path is required, should not be empty")
+		}
+		taskID, err := addTask(TaskRequest{
+			Name:    tea.StringValue(req.TaskName),
+			Command: *config.Config.Bin,
+			Args:    []string{"fs", "distributedLoad", "--replication", "1", *p},
+		})
+		if err != nil {
+			return nil, err
+		}
+		taskids = append(taskids, taskID)
+	}
+	return taskids, nil
 }
 
 /*
 ./bin/goosefs fs loadMetadata -R /data-datalake/deltalake/aaa.db/bbb/
 */
-func LoadMetadata(path string) (string, error) {
-	return addTask(TaskRequest{
-		Command: *config.Config.Bin,
-		Args:    []string{"fs", "loadMetadata", "-R", path},
-	})
+func LoadMetadata(req models.GooseFSRequest) ([]string, error) {
+	taskids := make([]string, 0)
+	for _, p := range req.Path {
+		if p == nil || *p == "" {
+			return nil, fmt.Errorf("path is required, should not be empty")
+		}
+		taskID, err := addTask(TaskRequest{
+			Name:    tea.StringValue(req.TaskName),
+			Command: *config.Config.Bin,
+			Args:    []string{"fs", "loadMetadata", "-R", *p},
+		})
+		if err != nil {
+			return nil, err
+		}
+		taskids = append(taskids, taskID)
+	}
+	return taskids, nil
 }
 
 /*
@@ -46,17 +75,19 @@ func List(path string, timeOut int) (string, error) {
 	for {
 		count++
 		if count > timeOut {
-			return "", fmt.Errorf("wait for task done timeout")
+			return "", fmt.Errorf("wait for task done timeout, you can call output api to get task output, taskid: %s", taskid)
 		}
 		// log.Println("get task status:", taskid)
-		status, err := GetTaskStatus(taskid)
+		status, err := GetTaskStatus(models.QueryTaskRequest{
+			TaskID: &taskid,
+		})
 		if err != nil {
 			return "", err
 		}
 		log.Printf("task %s status: %s\n", taskid, status.Status)
 		if status.Status == "<nil>" {
 			time.Sleep(1 * time.Second)
-		} else if status.Status == "exit status 0" {
+		} else if status.Status == models.TaskStatusSuccess {
 			break
 		} else {
 			return "", fmt.Errorf("task %s exec error: %s", taskid, status.Status)
@@ -64,11 +95,13 @@ func List(path string, timeOut int) (string, error) {
 	}
 
 	// 读取输出文件
-	output, err := GetTaskOutput(taskid)
+	output, err := GetTaskOutput(models.QueryTaskRequest{
+		TaskID: &taskid,
+	})
 	if err != nil {
 		return "", fmt.Errorf("get task output error: %v", err)
 	}
-	return output, nil
+	return output[taskid], nil
 }
 
 /*
@@ -89,24 +122,30 @@ func Report() (string, error) {
 	for {
 		count++
 		if count > 30 {
-			return "", fmt.Errorf("wait for task done timeout")
+			return "", fmt.Errorf("wait for task done timeout, you can call output api to get task output, taskid: %s", taskid)
 		}
-		// log.Println("get task status:", taskid)
-		status, err := GetTaskStatus(taskid)
+		log.Println("get task status:", taskid)
+		status, err := GetTaskStatus(models.QueryTaskRequest{
+			TaskID: &taskid,
+		})
 		if err != nil {
 			return "", err
 		}
-		// log.Println("task status:", status.Status)
-		if status.Status == "exit status 0" {
+		log.Println("task status:", status.Status)
+		if status.Status == "<nil>" || status.Status == models.TaskStatusRunning {
+			time.Sleep(1 * time.Second)
+		} else {
 			break
 		}
-		time.Sleep(1 * time.Second)
 	}
 
 	// 读取输出文件
-	output, err := GetTaskOutput(taskid)
+	output, err := GetTaskOutput(models.QueryTaskRequest{
+		TaskID:   &taskid,
+		TaskName: nil,
+	})
 	if err != nil {
 		return "", fmt.Errorf("get task output error: %v", err)
 	}
-	return output, nil
+	return output[taskid], nil
 }

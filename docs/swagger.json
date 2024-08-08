@@ -10,7 +10,7 @@
     "paths": {
         "/api/v1/gfs": {
             "post": {
-                "description": "执行内置的 goosefs 命令，包括 distribute_load/load_metadata，返回 task_id，可以通过 task_id 获取执行状态或者输出",
+                "description": "执行内置的 goosefs 命令，包括 distribute_load/load_metadata，返回 task_id，可以通过 task_id 获取执行状态或者输出;注意GooseFSList是等待执行的不是挂起的任务，且只支持 1 个 path查询。",
                 "consumes": [
                     "application/json"
                 ],
@@ -36,7 +36,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/models.TaskStatus"
                         }
                     }
                 }
@@ -62,7 +62,7 @@
                 }
             }
         },
-        "/api/v1/output/{task_id}": {
+        "/api/v1/output": {
             "get": {
                 "description": "GetTaskOutput",
                 "consumes": [
@@ -77,21 +77,30 @@
                         "type": "string",
                         "description": "task_id",
                         "name": "task_id",
-                        "in": "path",
+                        "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "task_name",
+                        "name": "task_name",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
             }
         },
-        "/api/v1/status/{task_id}": {
+        "/api/v1/status": {
             "get": {
                 "description": "GetTaskStatus",
                 "consumes": [
@@ -106,15 +115,21 @@
                         "type": "string",
                         "description": "task_id",
                         "name": "task_id",
-                        "in": "path",
+                        "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "task_name",
+                        "name": "task_name",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/executor.TaskStatus"
+                            "$ref": "#/definitions/models.QueryTaskRequest"
                         }
                     }
                 }
@@ -122,34 +137,86 @@
         }
     },
     "definitions": {
-        "executor.TaskStatus": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                }
-            }
+        "models.GFSAction": {
+            "type": "string",
+            "enum": [
+                "GooseFSDistributeLoad",
+                "GooseFSLoadMetadata",
+                "GooseFSList"
+            ],
+            "x-enum-varnames": [
+                "GooseFSDistributeLoad",
+                "GooseFSLoadMetadata",
+                "GooseFSList"
+            ]
         },
         "models.GooseFSRequest": {
             "type": "object",
             "required": [
-                "action"
+                "action",
+                "path"
             ],
             "properties": {
                 "action": {
                     "description": "必填 0: GooseFSDistributeLoad 1: GooseFSLoadMetadata 2: GooseFSList",
-                    "type": "integer"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.GFSAction"
+                        }
+                    ]
                 },
                 "path": {
                     "description": "当 action 为 GooseFSDistributeLoad/GooseFSLoadMetadata/GooseFSList 时必填",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "task_name": {
+                    "description": "选填，支持提交多个任务到同一个任务标签上",
                     "type": "string"
                 },
                 "timeout": {
                     "description": "当 action 为 GooseFSList 由于没有挂起任务，所以需要指定超时时间 默认 30 秒",
                     "type": "integer"
+                }
+            }
+        },
+        "models.QueryTaskRequest": {
+            "type": "object",
+            "properties": {
+                "task_id": {
+                    "type": "string"
+                },
+                "task_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.TaskState": {
+            "type": "string",
+            "enum": [
+                "success",
+                "failed",
+                "running"
+            ],
+            "x-enum-varnames": [
+                "TaskStatusSuccess",
+                "TaskStatusFailed",
+                "TaskStatusRunning"
+            ]
+        },
+        "models.TaskStatus": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "status": {
+                    "$ref": "#/definitions/models.TaskState"
                 }
             }
         }

@@ -1,25 +1,61 @@
 definitions:
-  executor.TaskStatus:
-    properties:
-      id:
-        type: string
-      status:
-        type: string
-    type: object
+  models.GFSAction:
+    enum:
+    - GooseFSDistributeLoad
+    - GooseFSLoadMetadata
+    - GooseFSList
+    type: string
+    x-enum-varnames:
+    - GooseFSDistributeLoad
+    - GooseFSLoadMetadata
+    - GooseFSList
   models.GooseFSRequest:
     properties:
       action:
+        allOf:
+        - $ref: '#/definitions/models.GFSAction'
         description: '必填 0: GooseFSDistributeLoad 1: GooseFSLoadMetadata 2: GooseFSList'
-        type: integer
       path:
         description: 当 action 为 GooseFSDistributeLoad/GooseFSLoadMetadata/GooseFSList
           时必填
+        items:
+          type: string
+        type: array
+      task_name:
+        description: 选填，支持提交多个任务到同一个任务标签上
         type: string
       timeout:
         description: 当 action 为 GooseFSList 由于没有挂起任务，所以需要指定超时时间 默认 30 秒
         type: integer
     required:
     - action
+    - path
+    type: object
+  models.QueryTaskRequest:
+    properties:
+      task_id:
+        type: string
+      task_name:
+        type: string
+    type: object
+  models.TaskState:
+    enum:
+    - success
+    - failed
+    - running
+    type: string
+    x-enum-varnames:
+    - TaskStatusSuccess
+    - TaskStatusFailed
+    - TaskStatusRunning
+  models.TaskStatus:
+    properties:
+      data:
+        additionalProperties:
+          type: string
+        type: object
+      status:
+        $ref: '#/definitions/models.TaskState'
     type: object
 host: localhost:8080
 info:
@@ -33,7 +69,7 @@ paths:
       consumes:
       - application/json
       description: 执行内置的 goosefs 命令，包括 distribute_load/load_metadata，返回 task_id，可以通过
-        task_id 获取执行状态或者输出
+        task_id 获取执行状态或者输出;注意GooseFSList是等待执行的不是挂起的任务，且只支持 1 个 path查询。
       parameters:
       - description: DistrubuteLoad
         in: body
@@ -47,7 +83,7 @@ paths:
         "200":
           description: OK
           schema:
-            type: string
+            $ref: '#/definitions/models.TaskStatus'
       summary: execute for goosefs cli
       tags:
       - GooseFS
@@ -64,16 +100,20 @@ paths:
       summary: GooseFSReport
       tags:
       - GooseFS
-  /api/v1/output/{task_id}:
+  /api/v1/output:
     get:
       consumes:
       - application/json
       description: GetTaskOutput
       parameters:
       - description: task_id
-        in: path
+        in: query
         name: task_id
         required: true
+        type: string
+      - description: task_name
+        in: query
+        name: task_name
         type: string
       produces:
       - application/json
@@ -81,18 +121,24 @@ paths:
         "200":
           description: OK
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
       summary: GetTaskOutput
-  /api/v1/status/{task_id}:
+  /api/v1/status:
     get:
       consumes:
       - application/json
       description: GetTaskStatus
       parameters:
       - description: task_id
-        in: path
+        in: query
         name: task_id
         required: true
+        type: string
+      - description: task_name
+        in: query
+        name: task_name
         type: string
       produces:
       - application/json
@@ -100,6 +146,6 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/executor.TaskStatus'
+            $ref: '#/definitions/models.QueryTaskRequest'
       summary: GetTaskStatus
 swagger: "2.0"
