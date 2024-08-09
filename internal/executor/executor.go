@@ -99,7 +99,7 @@ func GetTaskStatus(req models.QueryTaskRequest) (models.TaskStatus, error) {
 			resp.Data[taskID] = fmt.Sprintf("task %s not found in mem, maybe server has restart, you can call output api to get task output", taskID)
 			resp.Status = models.TaskStatusFailed
 		} else {
-			resp.Data[taskID] = cmd.ProcessState.String()
+			resp.Data[taskID] = fmt.Sprintf("cmd: %s status: %s", strings.Join(cmd.Args, " "), cmd.ProcessState.String())
 			if cmd.ProcessState.String() == "<nil>" {
 				resp.Status = models.TaskStatusRunning
 			} else if cmd.ProcessState.String() != "exit status 0" {
@@ -118,7 +118,7 @@ func GetTaskOutput(req models.QueryTaskRequest) (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Infof("taskFiles: %v", taskFiles)
+	log.Debugf("taskFiles: %v", taskFiles)
 	contentAll := make(map[string]string, len(taskFiles))
 	for _, taskFile := range taskFiles {
 		taskid, err := utils.ParseTaskID(taskFile)

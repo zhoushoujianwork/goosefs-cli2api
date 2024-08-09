@@ -17,13 +17,13 @@ func GenerateTaskID(taskName, uid string) string {
 	// 清除空格，避免文件名中出现空格
 	taskName = strings.ReplaceAll(taskName, " ", "")
 	filePath := strings.TrimSuffix(*config.Config.OutputDir, "/") + "/" + taskName + "_" + uid + ".txt"
-	log.Infof("filePath: %s", filePath)
+	log.Debugf("filePath: %s", filePath)
 	return filePath
 }
 
 // FindFiles 根据taskID或taskName在给定目录下找到所有匹配文件路径
 func FindFiles(req models.QueryTaskRequest) ([]string, error) {
-	log.Infof(tea.Prettify(req))
+	log.Debugf(tea.Prettify(req))
 	if req.TaskID != nil && *req.TaskID != "" && req.TaskName != nil && *req.TaskName != "" {
 		return []string{fmt.Sprintf("%s_%s.txt", *req.TaskName, *req.TaskID)}, nil
 	}
@@ -45,10 +45,10 @@ func FindFiles(req models.QueryTaskRequest) ([]string, error) {
 		key := entry.Name()
 		if (req.TaskID != nil && *req.TaskID != "" && strings.HasSuffix(key, *req.TaskID+".txt")) ||
 			(req.TaskName != nil && *req.TaskName != "" && (strings.HasPrefix(key, *req.TaskName))) {
-			log.Infof("FindFiles: ", key)
+			log.Debugf("FindFiles:%s", key)
 			if req.TaskName != nil && *req.TaskName != "" {
 				// 排除前缀一致的任务情况。比如 taskA 会匹配到 taskABC这种情况，通过移除 taskname 判断后续是否满足 uuid来判断
-				log.Infof(strings.TrimSuffix(strings.TrimPrefix(key, *req.TaskName+"_"), ".txt"))
+				log.Debugf(strings.TrimSuffix(strings.TrimPrefix(key, *req.TaskName+"_"), ".txt"))
 				if len(strings.TrimSuffix(strings.TrimPrefix(key, *req.TaskName+"_"), ".txt")) != 36 {
 					continue
 				}

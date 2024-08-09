@@ -34,7 +34,7 @@ var rootCmd = &cobra.Command{
 		r := gin.Default()
 		api.RegisterRoutes(r)          // 注册API路由
 		go executor.StartTaskManager() // 启动任务管理器，负责任务的调度和状态管理
-		log.Infof("api server start on http://localhost:%d\n", port)
+		log.Infof("api server start on http://localhost:%d", port)
 		if err := r.Run(fmt.Sprintf("0.0.0.0:%d", port)); err != nil {
 			panic(err)
 		}

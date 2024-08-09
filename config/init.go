@@ -34,6 +34,7 @@ func init() {
 	}
 
 	// 支持环境变量方式载入配置
+	LoadFromEnv()
 	FixConfigForGoosefs()
 }
 
@@ -44,6 +45,7 @@ func LoadFromEnv() {
 			log.Warnf("ENV GOOSEFS_BIN is set, ignore Config.goosefs_bin")
 		}
 		Config.Bin = tea.String(os.Getenv("GOOSEFS_BIN"))
+		log.Infof("env set bin: %s", *Config.Bin)
 	}
 
 	if os.Getenv("GOOSEFS_OUTPUT_DIR") != "" {
@@ -51,6 +53,7 @@ func LoadFromEnv() {
 			log.Warnf("ENV GOOSEFS_OUTPUT_DIR is set, ignore Config.output_dir")
 		}
 		Config.OutputDir = tea.String(os.Getenv("GOOSEFS_OUTPUT_DIR"))
+		log.Infof("env set output dir: %s", *Config.OutputDir)
 	}
 
 	if os.Getenv("GOOSEFS_DINGTALK_ALERT_TOKEN") != "" {
@@ -60,6 +63,7 @@ func LoadFromEnv() {
 		Config.DingtalkAlert = &models.DingtalkAlert{
 			Token: os.Getenv("GOOSEFS_DINGTALK_ALERT_TOKEN"),
 		}
+		log.Infof("env set dingtalk token: %s", Config.DingtalkAlert.Token)
 	}
 }
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"goosefs-cli2api/config"
 	"goosefs-cli2api/internal/models"
+	"goosefs-cli2api/pkg/dingtalk"
 	"time"
 
 	"github.com/xops-infra/noop/log"
@@ -11,10 +12,64 @@ import (
 	"github.com/alibabacloud-go/tea/tea"
 )
 
+// 实现任务完成后的告警通知
+func checkTasksIsFinished(act models.GFSAction, taskids []string, task_name *string) {
+
+	for {
+		time.Sleep(5 * time.Second)
+		log.Debugf("checkTasksIsFinished")
+		var status []models.TaskStatus
+		if task_name != nil && *task_name != "" {
+			// 按照任务进度查询
+			_status, err := GetTaskStatus(models.QueryTaskRequest{
+				TaskName: task_name,
+			})
+			if err != nil {
+				log.Errorf("checkTasksIsFinished error: %s", err)
+				continue
+			}
+			status = append(status, _status)
+		} else {
+			// 按照任务ID查询
+			for _, id := range taskids {
+				_status, err := GetTaskStatus(models.QueryTaskRequest{
+					TaskID: tea.String(id),
+				})
+				if err != nil {
+					log.Errorf("checkTasksIsFinished error: %s", err)
+					continue
+				}
+				status = append(status, _status)
+			}
+		}
+
+		allStatus := make(map[models.TaskState]int, 0)
+		for _, s := range status {
+			if s.Status == models.TaskStatusRunning {
+				allStatus[models.TaskStatusRunning]++
+				continue
+			}
+			allStatus[s.Status]++
+		}
+
+		var msg string
+		if allStatus[models.TaskStatusFailed] > 0 {
+			msg = "告警：" + string(act) + "\tERROR!\n"
+		} else {
+			msg = "通知:" + string(act) + "\tSUCCESS!\n"
+		}
+
+		dingtalk.SendAlert(msg + tea.Prettify(status))
+
+		break
+	}
+}
+
 /*
 ./bin/goosefs fs distributedLoad --replication 1 /data-datalake/deltalake/aaa.db/bbb/
 
 支持多路径 Path 任务提交，返回 1 个 task_id
+实现任务完成告警，每次任务进来后挂起一个任务查询的协程，直到任务状态不是 running；
 */
 
 func DistrubuteLoad(req models.GooseFSRequest) ([]string, error) {
@@ -33,6 +88,7 @@ func DistrubuteLoad(req models.GooseFSRequest) ([]string, error) {
 		}
 		taskids = append(taskids, taskID)
 	}
+	go checkTasksIsFinished(models.GooseFSDistributeLoad, taskids, req.TaskName)
 	return taskids, nil
 }
 
@@ -55,6 +111,7 @@ func LoadMetadata(req models.GooseFSRequest) ([]string, error) {
 		}
 		taskids = append(taskids, taskID)
 	}
+	go checkTasksIsFinished(models.GooseFSLoadMetadata, taskids, req.TaskName)
 	return taskids, nil
 }
 
