@@ -1,0 +1,13 @@
+services: 
+  goosefs-cli2api:
+    restart: always # 支持 always, on-failure, unless-stopped
+    image: zhoushoujian/goosefs-cli2api:latest
+    ports: 
+      - "8080:8080"
+    environment:
+      - GOOSEFS_BIN=/opt/jms/goosefs/bin/goosefs # 指定 goosefs 路径
+      - GOOSEFS_OUTPUT_DIR=/opt/goosefs-cli2api # 指定输出目录，有状态存储，默认为 /tmp
+      - DEBUG=true # 开启调试模式
+    volumes: 
+      - "/opt/goosefs-cli2api:/opt/goosefs-cli2api" # 持久化数据
+  

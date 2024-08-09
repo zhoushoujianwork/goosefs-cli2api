@@ -25,7 +25,25 @@ func init() {
 	if err := viper.Unmarshal(&Config); err != nil {
 		log.Fatalf("Unable to decode into struct, %v", err)
 	}
+	// 支持环境变量方式载入配置
 	FixConfigForGoosefs()
+}
+
+// 优先级高于配置文件
+func LoadFromEnv() {
+	if os.Getenv("GOOSEFS_BIN") != "" {
+		if Config.Bin != nil && *Config.Bin != "" {
+			log.Println("ENV GOOSEFS_BIN is set, ignore Config.goosefs_bin")
+		}
+		Config.Bin = tea.String(os.Getenv("GOOSEFS_BIN"))
+	}
+
+	if os.Getenv("GOOSEFS_OUTPUT_DIR") != "" {
+		if Config.OutputDir != nil && *Config.OutputDir != "" {
+			log.Println("ENV GOOSEFS_OUTPUT_DIR is set, ignore Config.output_dir")
+		}
+		Config.OutputDir = tea.String(os.Getenv("GOOSEFS_OUTPUT_DIR"))
+	}
 }
 
 func FixConfigForGoosefs() {
