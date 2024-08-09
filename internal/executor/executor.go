@@ -6,11 +6,12 @@ import (
 	"goosefs-cli2api/internal/models"
 	"goosefs-cli2api/pkg/utils"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
 	"sync"
+
+	"github.com/xops-infra/noop/log"
 
 	"github.com/google/uuid"
 )
@@ -117,7 +118,7 @@ func GetTaskOutput(req models.QueryTaskRequest) (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Println("taskFiles:", taskFiles)
+	log.Infof("taskFiles: %v", taskFiles)
 	contentAll := make(map[string]string, len(taskFiles))
 	for _, taskFile := range taskFiles {
 		taskid, err := utils.ParseTaskID(taskFile)

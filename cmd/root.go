@@ -7,8 +7,9 @@ import (
 	"fmt"
 	"goosefs-cli2api/internal/api"
 	"goosefs-cli2api/internal/executor"
-	"log"
 	"os"
+
+	"github.com/xops-infra/noop/log"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
@@ -33,7 +34,7 @@ var rootCmd = &cobra.Command{
 		r := gin.Default()
 		api.RegisterRoutes(r)          // 注册API路由
 		go executor.StartTaskManager() // 启动任务管理器，负责任务的调度和状态管理
-		log.Printf("api server start on http://localhost:%d\n", port)
+		log.Infof("api server start on http://localhost:%d\n", port)
 		if err := r.Run(fmt.Sprintf("0.0.0.0:%d", port)); err != nil {
 			panic(err)
 		}
@@ -67,4 +68,7 @@ func init() {
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "debug mode")
 	rootCmd.PersistentFlags().IntVarP(&port, "port", "p", 8080, "api server port")
+	if debug {
+		os.Setenv("DEBUG", "true")
+	}
 }

@@ -3,8 +3,9 @@ package api
 import (
 	"goosefs-cli2api/internal/executor"
 	"goosefs-cli2api/internal/models"
-	"log"
 	"net/http"
+
+	"github.com/xops-infra/noop/log"
 
 	_ "goosefs-cli2api/docs"
 
@@ -77,7 +78,7 @@ func getTaskOutput(c *gin.Context) {
 	if taskName != "" {
 		req.TaskName = &taskName
 	}
-	log.Println(tea.Prettify(req))
+	log.Debugf(tea.Prettify(req))
 	if req.TaskID == nil && req.TaskName == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "task_id or task_name is required"})
 		return

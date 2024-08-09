@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"goosefs-cli2api/config"
 	"goosefs-cli2api/internal/models"
-	"log"
 	"time"
+
+	"github.com/xops-infra/noop/log"
 
 	"github.com/alibabacloud-go/tea/tea"
 )
@@ -69,7 +70,7 @@ func List(path string, timeOut int) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// log.Println("taskid:", taskid)
+	// log.Infof("taskid:", taskid)
 	// wait for task done
 	count := 0
 	for {
@@ -77,14 +78,14 @@ func List(path string, timeOut int) (string, error) {
 		if count > timeOut {
 			return "", fmt.Errorf("wait for task done timeout, you can call output api to get task output, taskid: %s", taskid)
 		}
-		// log.Println("get task status:", taskid)
+		// log.Infof("get task status:", taskid)
 		status, err := GetTaskStatus(models.QueryTaskRequest{
 			TaskID: &taskid,
 		})
 		if err != nil {
 			return "", err
 		}
-		log.Printf("task %s status: %s\n", taskid, status.Status)
+		log.Infof("task %s status: %s\n", taskid, status.Status)
 		if status.Status == "<nil>" {
 			time.Sleep(1 * time.Second)
 		} else if status.Status == models.TaskStatusSuccess {
@@ -116,7 +117,7 @@ func Report() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// log.Println("taskid:", taskid)
+	// log.Infof("taskid:", taskid)
 	// wait for task done
 	count := 0
 	for {
@@ -124,14 +125,14 @@ func Report() (string, error) {
 		if count > 30 {
 			return "", fmt.Errorf("wait for task done timeout, you can call output api to get task output, taskid: %s", taskid)
 		}
-		log.Println("get task status:", taskid)
+		log.Infof("get task status:", taskid)
 		status, err := GetTaskStatus(models.QueryTaskRequest{
 			TaskID: &taskid,
 		})
 		if err != nil {
 			return "", err
 		}
-		log.Println("task status:", status.Status)
+		log.Infof("task status:", status.Status)
 		if status.Status == "<nil>" || status.Status == models.TaskStatusRunning {
 			time.Sleep(1 * time.Second)
 		} else {
