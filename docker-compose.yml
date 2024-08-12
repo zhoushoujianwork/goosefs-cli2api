@@ -5,10 +5,11 @@ services:
     ports: 
       - "8080:8080"
     environment:
-      - GOOSEFS_BIN=/opt/jms/goosefs/bin/goosefs # 指定 goosefs 路径
+      - GOOSEFS_BIN=/opt/goosefs/bin/goosefs # 指定 goosefs 路径
       - GOOSEFS_OUTPUT_DIR=/opt/goosefs-cli2api # 指定输出目录，有状态存储，默认为 /tmp
       - GOOSEFS_DINGTALK_ALERT_TOKEN=${GOOSEFS_DINGTALK_ALERT_TOKEN} # 钉钉报警机器人 Token
       - DEBUG=true # 开启调试模式
     volumes: 
       - "/opt/goosefs-cli2api:/opt/goosefs-cli2api" # 持久化数据
+      - "/usr/local/service/goosefs-clusters/g_emr_y4h30x8j/goosefs/:/opt/goosefs/" # 挂载宿主机的 goosefs 路径
   

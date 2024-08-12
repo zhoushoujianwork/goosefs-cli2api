@@ -26,7 +26,7 @@ func init() {
 	viper.AddConfigPath("config") // 多个搜索路径，这里多加一个项目中的 config 目录
 
 	if err := viper.ReadInConfig(); err != nil {
-		log.Panicf("Error reading config file, %s", err)
+		log.Warnf("Error reading config file faild, %s, also support ENV", err)
 	}
 
 	if err := viper.Unmarshal(&Config); err != nil {
@@ -34,12 +34,12 @@ func init() {
 	}
 
 	// 支持环境变量方式载入配置
-	LoadFromEnv()
-	FixConfigForGoosefs()
+	loadFromEnv()
+
 }
 
 // 优先级高于配置文件
-func LoadFromEnv() {
+func loadFromEnv() {
 	if os.Getenv("GOOSEFS_BIN") != "" {
 		if Config.Bin != nil && *Config.Bin != "" {
 			log.Warnf("ENV GOOSEFS_BIN is set, ignore Config.goosefs_bin")
@@ -65,9 +65,10 @@ func LoadFromEnv() {
 		}
 		log.Infof("env set dingtalk token: %s", Config.DingtalkAlert.Token)
 	}
+	fixConfigForGoosefs()
 }
 
-func FixConfigForGoosefs() {
+func fixConfigForGoosefs() {
 	if Config.OutputDir == nil {
 		log.Warnf("Config.OutputDir is nil, use /tmp")
 		Config.OutputDir = tea.String("/tmp")
