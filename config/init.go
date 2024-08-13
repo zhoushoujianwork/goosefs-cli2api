@@ -13,7 +13,7 @@ import (
 var Config models.GooseFS
 
 // 当前执行目录下的 config/config.yaml 配置文件中获取配置
-func init() {
+func Init() {
 
 	if os.Getenv("DEBUG") == "true" {
 		Config.Debug = true

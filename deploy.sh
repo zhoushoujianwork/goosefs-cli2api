@@ -9,7 +9,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/goosefs-cli2api
+ExecStart=/usr/bin/goosefs-cli2api run
 Restart=on-failure
 RestartSec=5
 User=root
