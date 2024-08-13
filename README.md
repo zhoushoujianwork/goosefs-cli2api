@@ -19,7 +19,12 @@
 
 ### 日常任务接口
 
-<a name="bdQGS"></a>
+支持三种任务：
+
+1. GooseFSList，查询直接返回
+2. GooseFSLoadMetadata，以任务的方式挂起，结果通过下面接口查询
+3. GooseFSDistributeLoad，以任务的方式挂起，结果通过下面接口查询
+   <a name="bdQGS"></a>
 
 #### 查询缓存目录 GooseFSList
 
@@ -27,10 +32,7 @@
 
 ```bash
 curl --location --request POST 'http://localhost:8080/api/v1/gfs' \
---header 'User-Agent: Apifox/1.0.0 (https://apifox.com)' \
 --header 'Content-Type: application/json' \
---header 'Accept: */*' \
---header 'Connection: keep-alive' \
 --data-raw '{
   "action": "GooseFSList",
   "path": [
@@ -45,10 +47,7 @@ curl --location --request POST 'http://localhost:8080/api/v1/gfs' \
 
 ```bash
 curl --location --request POST 'http://localhost:8080/api/v1/gfs' \
---header 'User-Agent: Apifox/1.0.0 (https://apifox.com)' \
 --header 'Content-Type: application/json' \
---header 'Accept: */*' \
---header 'Connection: keep-alive' \
 --data-raw '{
   "action": "GooseFSDistributeLoad",
   "task_name": "test_task_name",
@@ -63,34 +62,26 @@ curl --location --request POST 'http://localhost:8080/api/v1/gfs' \
 ]
 ```
 
-```bash
-# 因为任务是后台挂起的，可能长时间执行中
-# 注意将 taskID 放到 Path中
-$ curl --request GET 'http://localhost:8080/api/v1/status/683877b1-d293-4b89-b5c0-4f5742502dd5'
-
-# 返回
-{
-    "id": "683877b1-d293-4b89-b5c0-4f5742502dd5",
-    "status": "exit status 0"
-}
-```
-
-```bash
-# 同样的 url path加入 taskID
-$ curl --request GET 'http://localhost:8080/api/v1/output/683877b1-d293-4b89-b5c0-4f5742502dd5'
-```
-
 <a name="yHWH4"></a>
 
 #### 发起 loadMetadata 请求 GooseFSLoadMetadata
 
-> 参考 1.2 ，唯一不一样的是请求体 action 为 1；
+```bash
+curl --location --request POST 'http://localhost:8080/api/v1/gfs' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+  "action": "GooseFSLoadMetadata",
+  "path": [
+    "/data-datalake-dataprod-bj-1251949819/deltalake/test"
+  ]
+}'
 
-```json
-{
-  "action": 1,
-  "path": "/tmp/"
-}
+# 返回
+[
+    "204a65e4-4ad3-4f07-850c-b99077aa6d02",
+    "160d7bf1-0da3-473d-b4c4-29f7c7d37e14"
+]
+
 ```
 
 <a name="BUBBw"></a>
@@ -103,10 +94,7 @@ $ curl --request GET 'http://localhost:8080/api/v1/output/683877b1-d293-4b89-b5c
 #### 查询任务输出
 
 ```bash
-curl --location --request GET 'http://localhost:8080/api/v1/output?task_name=test_task_name' \
---header 'User-Agent: Apifox/1.0.0 (https://apifox.com)' \
---header 'Accept: */*' \
---header 'Connection: keep-alive'
+curl --location --request GET 'http://localhost:8080/api/v1/output?task_name=test_task_name'
 ```
 
 <a name="ccgvf"></a>
@@ -114,10 +102,7 @@ curl --location --request GET 'http://localhost:8080/api/v1/output?task_name=tes
 #### 查询任务状态
 
 ```bash
-curl --location --request GET 'http://localhost:8080/api/v1/status?task_name=test_task_name' \
---header 'User-Agent: Apifox/1.0.0 (https://apifox.com)' \
---header 'Accept: */*' \
---header 'Connection: keep-alive'
+curl --location --request GET 'http://localhost:8080/api/v1/status?task_name=test_task_name'
 ```
 
 <a name="ucUTV"></a>
