@@ -54,7 +54,7 @@ func checkTasksIsFinished(act models.GFSAction, taskids []string, task_name *str
 
 		var msg string
 		if allStatus[models.TaskStatusFailed] > 0 {
-			msg = "告警：" + string(act) + "\tERROR!\n"
+			msg = "告警:" + string(act) + "\tERROR!\n"
 		} else {
 			msg = "通知:" + string(act) + "\tSUCCESS!\n"
 		}
@@ -143,7 +143,7 @@ func List(path string, timeOut int) (string, error) {
 			return "", err
 		}
 		log.Infof("task %s status: %s\n", taskid, status.Status)
-		if status.Status == "<nil>" {
+		if status.Status == "<nil>" || status.Status == models.TaskStatusRunning {
 			time.Sleep(1 * time.Second)
 		} else if status.Status == models.TaskStatusSuccess {
 			break
