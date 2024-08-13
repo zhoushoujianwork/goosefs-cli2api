@@ -23,6 +23,7 @@ func init() {
 	viper.SetConfigName("config") // 配置文件名(无扩展名)
 	viper.SetConfigType("yaml")   // 如果配置文件名中没有扩展名，则需要指定配置文件格式，如 "yaml"
 	viper.AddConfigPath(".")      // 设置配置文件的搜索目录，当前目录
+	viper.AddConfigPath("/etc/goosefs-cli2api")
 	viper.AddConfigPath("config") // 多个搜索路径，这里多加一个项目中的 config 目录
 
 	if err := viper.ReadInConfig(); err != nil {

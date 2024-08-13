@@ -182,14 +182,14 @@ func Report() (string, error) {
 		if count > 30 {
 			return "", fmt.Errorf("wait for task done timeout, you can call output api to get task output, taskid: %s", taskid)
 		}
-		log.Infof("get task status:", taskid)
+		log.Debugf("get task status: %s", taskid)
 		status, err := GetTaskStatus(models.QueryTaskRequest{
 			TaskID: &taskid,
 		})
 		if err != nil {
 			return "", err
 		}
-		log.Infof("task status:", status.Status)
+		log.Debugf("task status: %s", status.Status)
 		if status.Status == "<nil>" || status.Status == models.TaskStatusRunning {
 			time.Sleep(1 * time.Second)
 		} else {
