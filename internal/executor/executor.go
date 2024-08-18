@@ -9,42 +9,27 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"sync"
 
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/xops-infra/noop/log"
 
 	"github.com/google/uuid"
 )
 
-type TaskStatus struct {
-	ID     string `json:"id"`
-	Status string `json:"status"`
-}
-
 type TaskRequest struct {
-	Name    string   `json:"name"` // 因为会参与到文件名，所以这里不用最好用英文且不支持空格等
-	Command string   `json:"command"`
-	Args    []string `json:"args"`
-}
-
-var (
-	tasks      = make(map[string]*exec.Cmd)
-	tasksMutex sync.RWMutex
-)
-
-func StartTaskManager() {
-	// 可以扩展任务清理逻辑等
+	TaskName string               `json:"task_name"`
+	Command  string               `json:"command"`
+	Action   models.GooseFSAction `json:"action" binding:"required"` // 入库用
+	Path     string               `json:"path" binding:"required"`   // 入库用
+	Args     []string             `json:"args"`
 }
 
 // 只允许内部调用，不允许外部传入所有指令，防止执行影响系统的指令
 func addTask(req TaskRequest) (string, error) {
 	taskID := uuid.New().String()
 	cmd := exec.Command(req.Command, req.Args...)
-	tasksMutex.Lock()
-	tasks[taskID] = cmd
-	tasksMutex.Unlock()
 
-	outputPath := utils.GenerateTaskID(req.Name, taskID)
+	outputPath := utils.GenerateTaskID(req.TaskName, taskID)
 	outFile, err := os.Create(outputPath)
 	if err != nil {
 		return "", err
@@ -56,61 +41,133 @@ func addTask(req TaskRequest) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	// 创建 task
+	err = config.DB.CreateGoosefsTask(taskID, models.GoosefsTaskRequest{
+		TaskName: &req.TaskName,
+		Path:     &req.Path,
+		Action:   req.Action,
+	})
+	if err != nil {
+		return "", fmt.Errorf("createGoosefsTask error: %v", err)
+	}
 
 	go func() {
 		cmd.Wait()
 		outFile.Close()
+		// 读取文件行数
+		var count int
+		defer func() {
+			// 任务结束后更新任务状态
+			err := config.DB.UpdateGoosefsTask(taskID, models.UpdateGoosefsTaskRequest{ExitCode: tea.String(cmd.ProcessState.String()), Count: tea.Int(count)})
+			if err != nil {
+				log.Errorf("UpdateGoosefsPathStatus error: %v", err)
+			}
+		}()
+		file, err := os.Open(outputPath)
+		if err != nil {
+			count = -1
+			log.Errorf("count error: open file error: %v", err)
+			return
+		}
+		defer file.Close()
+		bytes, err := ioutil.ReadAll(file)
+		if err != nil {
+			count = -2
+			log.Errorf("count error: read file error: %v", err)
+			return
+		}
+		lines := strings.Split(string(bytes), "\n")
+		for _, line := range lines {
+			if line == "" {
+				continue
+			}
+			count++
+		}
 	}()
 
 	return taskID, nil
 }
 
-func GetTaskStatus(req models.QueryTaskRequest) (models.TaskStatus, error) {
-	taskIDs := []string{}
-	// 先判断依据有 2 个信息的情况，不实用遍历路径方式，降低复杂度
-	if req.TaskID != nil && *req.TaskID != "" && req.TaskName == nil {
-		taskIDs = append(taskIDs, *req.TaskID)
-	} else {
-		taskFiles, err := utils.FindFiles(req)
-		if err != nil {
-			return models.TaskStatus{}, fmt.Errorf("find files error: %v", err)
-		}
-		if len(taskFiles) == 0 {
-			return models.TaskStatus{}, os.ErrNotExist
-		}
-		for _, taskFile := range taskFiles {
-			taskid, err := utils.ParseTaskID(taskFile)
-			if err != nil {
-				return models.TaskStatus{}, err
-			}
-			taskIDs = append(taskIDs, taskid)
-		}
-	}
+func runCmd(cmd string, args []string) (string, error) {
+	cmdObj := exec.Command(cmd, args...)
+	bytes, err := cmdObj.Output()
+	return string(bytes), err
+}
 
-	resp := models.TaskStatus{
-		Data:   make(map[string]string, len(taskIDs)),
+func GetTaskStatus(filter models.FilterGoosefsTaskRequest) (models.TasksStatus, error) {
+	tasks, err := config.DB.GetGoosefsTask(filter)
+	if err != nil {
+		return models.TasksStatus{}, err
+	}
+	if len(tasks) == 0 {
+		return models.TasksStatus{}, fmt.Errorf("no task found by filter: %s", tea.Prettify(filter))
+	}
+	resp := models.TasksStatus{
+		Data:   make(map[string]models.TaskInfo, len(tasks)),
 		Status: models.TaskStatusSuccess,
 	}
-	for _, taskID := range taskIDs {
-		tasksMutex.RLock()
-		defer tasksMutex.RUnlock()
-		cmd, exists := tasks[taskID]
-		if !exists {
-			resp.Data[taskID] = fmt.Sprintf("task %s not found in mem, maybe server has restart, you can call output api to get task output", taskID)
-			resp.Status = models.TaskStatusFailed
-		} else {
-			resp.Data[taskID] = fmt.Sprintf("cmd: %s status: %s", strings.Join(cmd.Args, " "), cmd.ProcessState.String())
-			if cmd.ProcessState.String() == "<nil>" {
-				resp.Status = models.TaskStatusRunning
-			} else if cmd.ProcessState.String() != "exit status 0" {
+	successCount := 0
+	isRunning := false
+	for _, task := range tasks {
+		// Path必须会有的，这里防止错误情况
+		if task.Path == nil {
+			continue
+		}
+		//缓存目录没有变化的不展示出来,当请求为GFSForceLoad,GFSDistributeLoad时
+		if task.Count != nil && *task.Count == 0 && (task.Action == models.GFSForceLoad || task.Action == models.GFSDistributeLoad) {
+			continue
+		}
+
+		taskinfo := models.TaskInfo{
+			Path: *task.Path,
+		}
+
+		if task.ExitCode != nil && task.Count != nil {
+			taskinfo.Count = *task.Count
+			taskinfo.ExitCode = *task.ExitCode
+			// 任务执行完成
+			if GetCmdStatus(*task.ExitCode) == models.TaskStatusSuccess {
+				successCount++
+			}
+		}
+		if task.ExitCode == nil {
+			isRunning = true
+		}
+
+		resp.Data[task.ID] = taskinfo
+	}
+	if isRunning {
+		resp.Status = models.TaskStatusRunning
+	} else {
+		if successCount != len(tasks) {
+			if successCount > 0 {
+				resp.Status = models.TaskStatusNotallSuccess
+			} else {
 				resp.Status = models.TaskStatusFailed
 			}
 		}
 	}
-	return resp, nil
 
+	return resp, nil
 }
 
+/*
+status只返回成功Successfully内容的服务，其他 path的不通知
+$ cat test_task_name_160d7bf1-0da3-473d-b4c4-29f7c7d37e14.txt
+Allow up to 100 active jobs
+/data-datalake-dataprod-bj-1251949819/deltalake/npd_temp.db/ods_corpdata_pingan_tb_certificate_integrate/20240813_075219_00032_byuem-d4444027-b4ef-4cf5-b3c8-6141b9884e93 loading
+/data-datalake-dataprod-bj-1251949819/deltalake/npd_temp.db/ods_corpdata_pingan_tb_certificate_integrate/_delta_log/00000000000000000000.json loading
+/data-datalake-dataprod-bj-1251949819/deltalake/npd_temp.db/ods_corpdata_pingan_tb_certificate_integrate/_delta_log/_trino_meta/extended_stats.json loading
+Successfully loaded path /data-datalake-dataprod-bj-1251949819/deltalake/npd_temp.db/ods_corpdata_pingan_tb_certificate_integrate/20240813_075219_00032_byuem-d4444027-b4ef-4cf5-b3c8-6141b9884e93 after 1 attempts
+Successfully loaded path /data-datalake-dataprod-bj-1251949819/deltalake/npd_temp.db/ods_corpdata_pingan_tb_certificate_integrate/_delta_log/00000000000000000000.json after 1 attempts
+Successfully loaded path /data-datalake-dataprod-bj-1251949819/deltalake/npd_temp.db/ods_corpdata_pingan_tb_certificate_integrate/_delta_log/_trino_meta/extended_stats.json after 1 attempts
+
+$ cat test_task_name_cd3fe749-4e32-4415-85df-57c3ddbea1b4.txt
+Allow up to 100 active jobs
+/data-datalake-dataprod-bj-1251949819/deltalake/npd_temp.db/ods_corpdata_pingan_tb_certificate_integrate/20240813_075219_00032_byuem-d4444027-b4ef-4cf5-b3c8-6141b9884e93 is already fully loaded in GooseFS
+/data-datalake-dataprod-bj-1251949819/deltalake/npd_temp.db/ods_corpdata_pingan_tb_certificate_integrate/_delta_log/00000000000000000000.json is already fully loaded in GooseFS
+/data-datalake-dataprod-bj-1251949819/deltalake/npd_temp.db/ods_corpdata_pingan_tb_certificate_integrate/_delta_log/_trino_meta/extended_stats.json is already fully loaded in GooseFS
+*/
 // 支持多个任务的结果一起查询输出
 func GetTaskOutput(req models.QueryTaskRequest) (map[string]string, error) {
 	// 获取 ID 反解析出原始的 TaskID

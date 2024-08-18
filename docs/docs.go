@@ -43,9 +43,9 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "task_id",
                         "schema": {
-                            "$ref": "#/definitions/models.TaskStatus"
+                            "type": "string"
                         }
                     }
                 }
@@ -132,6 +132,18 @@ const docTemplate = `{
                         "description": "task_name",
                         "name": "task_name",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "action",
+                        "name": "action",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "status",
+                        "name": "status",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -149,14 +161,21 @@ const docTemplate = `{
         "models.GFSAction": {
             "type": "string",
             "enum": [
-                "GooseFSDistributeLoad",
-                "GooseFSLoadMetadata",
-                "GooseFSList"
+                "GFSForceLoad",
+                "GFSDistributeLoad",
+                "GFSLoadMetadata",
+                "GFSList"
             ],
+            "x-enum-comments": {
+                "GFSDistributeLoad": "缓存数据，他的依据是 Master 上的 metadata",
+                "GFSForceLoad": "该步骤执行的是先去 LoadMetadata，然后再去 DistributeLoad，这样彻底更新",
+                "GFSLoadMetadata": "只更新元数据信息，可以更新掉cos上变更的内容"
+            },
             "x-enum-varnames": [
-                "GooseFSDistributeLoad",
-                "GooseFSLoadMetadata",
-                "GooseFSList"
+                "GFSForceLoad",
+                "GFSDistributeLoad",
+                "GFSLoadMetadata",
+                "GFSList"
             ]
         },
         "models.GooseFSRequest": {
@@ -167,7 +186,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "action": {
-                    "description": "必填 0: GooseFSDistributeLoad 1: GooseFSLoadMetadata 2: GooseFSList",
+                    "description": "必填 0: GooseFSDistributeLoad 1: GooseFSLoadMetadata 2: GooseFSList 3: GooseFSForceLoad",
                     "allOf": [
                         {
                             "$ref": "#/definitions/models.GFSAction"
@@ -199,33 +218,6 @@ const docTemplate = `{
                 },
                 "task_name": {
                     "type": "string"
-                }
-            }
-        },
-        "models.TaskState": {
-            "type": "string",
-            "enum": [
-                "success",
-                "failed",
-                "running"
-            ],
-            "x-enum-varnames": [
-                "TaskStatusSuccess",
-                "TaskStatusFailed",
-                "TaskStatusRunning"
-            ]
-        },
-        "models.TaskStatus": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
-                },
-                "status": {
-                    "$ref": "#/definitions/models.TaskState"
                 }
             }
         }

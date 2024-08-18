@@ -36,10 +36,13 @@ func RegisterRoutes(router *gin.Engine) {
 // @Produce json
 // @Param task_id query string true "task_id"
 // @Param task_name query string false "task_name"
+// @Param action query string false "action"
+// @Param status query string false "status"
 // @Success 200 {object} models.QueryTaskRequest
 // @Router /api/v1/status [get]
 func getTaskStatus(c *gin.Context) {
-	var req models.QueryTaskRequest
+	var req models.FilterGoosefsTaskRequest
+
 	taskID := c.Query("task_id")
 	if taskID != "" {
 		req.TaskID = &taskID
@@ -48,10 +51,17 @@ func getTaskStatus(c *gin.Context) {
 	if taskName != "" {
 		req.TaskName = &taskName
 	}
-	if req.TaskID == nil && req.TaskName == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "task_id or task_name is required"})
-		return
+	action := c.Query("action")
+	if action != "" {
+		gfsAction := models.GooseFSAction(action)
+		req.Action = &gfsAction
 	}
+	taskStatus := c.Query("status")
+	if taskStatus != "" {
+		gfsStatus := models.TaskState(taskStatus)
+		req.Status = &gfsStatus
+	}
+	log.Debugf(tea.Prettify(req))
 	status, err := executor.GetTaskStatus(req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

@@ -5,6 +5,7 @@ import (
 	"goosefs-cli2api/config"
 	"goosefs-cli2api/internal/models"
 	"goosefs-cli2api/pkg/dingtalk"
+	"strings"
 	"time"
 
 	"github.com/xops-infra/noop/log"
@@ -12,51 +13,31 @@ import (
 	"github.com/alibabacloud-go/tea/tea"
 )
 
-// 实现任务完成后的告警通知
-func checkTasksIsFinished(act models.GFSAction, taskids []string, task_name *string) {
+// 实现任务完成后的告警通知，只检查大量任务带有 task_name 的，单独不带task_name的不做通知
+func checkTasksIsFinished(act models.GooseFSAction, task_name *string) {
+	if task_name == nil {
+		log.Debugf("task_name and taskids are empty, skip checkTasksIsFinished")
+		return
+	}
 
 	for {
 		time.Sleep(5 * time.Second)
 		log.Debugf("checkTasksIsFinished")
-		var status []models.TaskStatus
-		if task_name != nil && *task_name != "" {
-			// 按照任务进度查询
-			_status, err := GetTaskStatus(models.QueryTaskRequest{
-				TaskName: task_name,
-			})
-			if err != nil {
-				log.Errorf("checkTasksIsFinished error: %s", err)
-				continue
-			}
-			status = append(status, _status)
-		} else {
-			// 按照任务ID查询
-			for _, id := range taskids {
-				_status, err := GetTaskStatus(models.QueryTaskRequest{
-					TaskID: tea.String(id),
-				})
-				if err != nil {
-					log.Errorf("checkTasksIsFinished error: %s", err)
-					continue
-				}
-				status = append(status, _status)
-			}
-		}
 
-		allStatus := make(map[models.TaskState]int, 0)
-		for _, s := range status {
-			if s.Status == models.TaskStatusRunning {
-				allStatus[models.TaskStatusRunning]++
-				continue
-			}
-			allStatus[s.Status]++
+		status, err := GetTaskStatus(models.FilterGoosefsTaskRequest{
+			TaskName: task_name,
+			Action:   &act,
+		})
+		if err != nil {
+			log.Errorf("checkTasksIsFinished error: %s", err)
+			continue
 		}
 
 		var msg string
-		if allStatus[models.TaskStatusFailed] > 0 {
-			msg = "告警:" + string(act) + "\tERROR!\n"
+		if status.Status != models.TaskStatusSuccess {
+			msg = "告警:" + string(act) + "\t" + string(status.Status) + "for task " + tea.StringValue(task_name) + "\n"
 		} else {
-			msg = "通知:" + string(act) + "\tSUCCESS!\n"
+			msg = "通知:" + string(act) + "task " + tea.StringValue(task_name) + "" + "\tSUCCESS!\n"
 		}
 
 		dingtalk.SendAlert(msg + tea.Prettify(status))
@@ -79,16 +60,19 @@ func DistrubuteLoad(req models.GooseFSRequest) ([]string, error) {
 			return nil, fmt.Errorf("path is required, should not be empty")
 		}
 		taskID, err := addTask(TaskRequest{
-			Name:    tea.StringValue(req.TaskName),
-			Command: *config.Config.Bin,
-			Args:    []string{"fs", "distributedLoad", "--replication", "1", *p},
+			Action:   models.GFSDistributeLoad,
+			Path:     *p,
+			TaskName: tea.StringValue(req.TaskName),
+			Command:  *config.Config.Bin,
+			// Args:    []string{"fs", "distributedLoad", "--replication", "1", *p},
+			Args: []string{"fs", "distributedLoad", "--replication", "1", *p, "grep", "Successfully loaded path"}, // 只存入新加载的文件其他无关信息过滤掉
 		})
 		if err != nil {
 			return nil, err
 		}
 		taskids = append(taskids, taskID)
 	}
-	go checkTasksIsFinished(models.GooseFSDistributeLoad, taskids, req.TaskName)
+	go checkTasksIsFinished(models.GFSDistributeLoad, req.TaskName)
 	return taskids, nil
 }
 
@@ -102,16 +86,57 @@ func LoadMetadata(req models.GooseFSRequest) ([]string, error) {
 			return nil, fmt.Errorf("path is required, should not be empty")
 		}
 		taskID, err := addTask(TaskRequest{
-			Name:    tea.StringValue(req.TaskName),
-			Command: *config.Config.Bin,
-			Args:    []string{"fs", "loadMetadata", "-R", *p},
+			TaskName: tea.StringValue(req.TaskName),
+			Command:  *config.Config.Bin,
+			Args:     []string{"fs", "loadMetadata", "-R", *p},
+			Path:     *p,
+			Action:   models.GFSLoadMetadata,
 		})
 		if err != nil {
 			return nil, err
 		}
 		taskids = append(taskids, taskID)
 	}
-	go checkTasksIsFinished(models.GooseFSLoadMetadata, taskids, req.TaskName)
+	go checkTasksIsFinished(models.GFSLoadMetadata, req.TaskName)
+	return taskids, nil
+}
+
+/*
+GooseFSForceLoad 该步骤执行的是先去 LoadMetadata，然后再去 DistributeLoad，这样彻底更新
+先执行 LoadMetadata，成功后再执行 DistributeLoad
+*/
+func ForceLoad(req models.GooseFSRequest) ([]string, error) {
+	taskids := make([]string, 0)
+	var errs []string
+	for _, p := range req.Path {
+		if p == nil || *p == "" {
+			return nil, fmt.Errorf("path is required, should not be empty")
+		}
+		_, err := runCmd(*config.Config.Bin, []string{"fs", "loadMetadata", "-R", *p})
+		if err != nil {
+			log.Errorf("loadMetadata error: %s", err)
+			errs = append(errs, fmt.Errorf("loadMetadata for %s error: %s", *p, err).Error())
+			continue
+		}
+		taskID, err := addTask(TaskRequest{
+			TaskName: tea.StringValue(req.TaskName),
+			Command:  *config.Config.Bin,
+			Args:     []string{"fs", "distributedLoad", "--replication", "1", *p},
+			Path:     *p,
+			Action:   models.GFSForceLoad,
+		})
+		if err != nil {
+			return nil, err
+		}
+		taskids = append(taskids, taskID)
+	}
+	if len(errs) > 0 {
+		if len(taskids) != 0 {
+			return nil, fmt.Errorf("success ids: %s, some task is failed: %s", strings.Join(taskids, ","), strings.Join(errs, "\n"))
+		}
+		return nil, fmt.Errorf(fmt.Sprintf("all task failed: %s", strings.Join(errs, "\n")))
+	}
+	go checkTasksIsFinished(models.GFSForceLoad, req.TaskName)
 	return taskids, nil
 }
 
@@ -123,6 +148,8 @@ func List(path string, timeOut int) (string, error) {
 	taskid, err := addTask(TaskRequest{
 		Command: *config.Config.Bin,
 		Args:    []string{"fs", "ls", path},
+		Path:    path,
+		Action:  models.GFSList,
 	})
 	if err != nil {
 		return "", err
@@ -136,7 +163,7 @@ func List(path string, timeOut int) (string, error) {
 			return "", fmt.Errorf("wait for task done timeout, you can call output api to get task output, taskid: %s", taskid)
 		}
 		// log.Infof("get task status:", taskid)
-		status, err := GetTaskStatus(models.QueryTaskRequest{
+		status, err := GetTaskStatus(models.FilterGoosefsTaskRequest{
 			TaskID: &taskid,
 		})
 		if err != nil {
@@ -183,7 +210,7 @@ func Report() (string, error) {
 			return "", fmt.Errorf("wait for task done timeout, you can call output api to get task output, taskid: %s", taskid)
 		}
 		log.Debugf("get task status: %s", taskid)
-		status, err := GetTaskStatus(models.QueryTaskRequest{
+		status, err := GetTaskStatus(models.FilterGoosefsTaskRequest{
 			TaskID: &taskid,
 		})
 		if err != nil {
@@ -206,4 +233,15 @@ func Report() (string, error) {
 		return "", fmt.Errorf("get task output error: %v", err)
 	}
 	return output[taskid], nil
+}
+
+func GetCmdStatus(exitCode string) models.TaskState {
+	switch exitCode {
+	case "ExitCode: 0":
+		return models.TaskStatusSuccess
+	case "<nil>":
+		return models.TaskStatusRunning
+	default:
+		return models.TaskStatusFailed
+	}
 }

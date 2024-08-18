@@ -5,6 +5,7 @@ type GooseFS struct {
 	Bin           *string        `mapstructure:"bin"`
 	OutputDir     *string        `mapstructure:"output_dir"`
 	DingtalkAlert *DingtalkAlert `mapstructure:"dingtalk_alert"`
+	DBFile        *string        `mapstructure:"db_file"` // sqlite 数据库文件
 }
 
 type DingtalkAlert struct {

@@ -2,6 +2,7 @@ package config
 
 import (
 	"goosefs-cli2api/internal/models"
+	"goosefs-cli2api/pkg/db"
 	"os"
 
 	"github.com/xops-infra/noop/log"
@@ -11,6 +12,8 @@ import (
 )
 
 var Config models.GooseFS
+
+var DB db.DB
 
 // 当前执行目录下的 config/config.yaml 配置文件中获取配置
 func Init() {
@@ -37,6 +40,15 @@ func Init() {
 	// 支持环境变量方式载入配置
 	loadFromEnv()
 
+	// 初始化数据库文件
+	var dbfile string
+	if Config.DBFile == nil || *Config.DBFile == "" {
+		dbfile = "/opt/goosefs-cli2api/goosefs.db"
+		log.Warnf("Config.db_file is nil, use %s", dbfile)
+	} else {
+		dbfile = *Config.DBFile
+	}
+	DB = db.NewSqliteDB(dbfile, Config.Debug)
 }
 
 // 优先级高于配置文件

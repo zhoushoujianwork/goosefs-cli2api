@@ -15,7 +15,7 @@ import (
 // @Accept json
 // @Produce json
 // @Param req body models.GooseFSRequest true "DistrubuteLoad"
-// @Success 200 {object} models.TaskStatus
+// @Success 200 {string} string "task_id"
 // @Router /api/v1/gfs [post]
 func GoosefsExecute(c *gin.Context) {
 	var req models.GooseFSRequest
@@ -26,7 +26,19 @@ func GoosefsExecute(c *gin.Context) {
 	}
 
 	switch req.Action {
-	case models.GooseFSDistributeLoad:
+	case models.GFSForceLoad:
+		if req.Path == nil {
+			c.String(http.StatusBadRequest, "path is required")
+			return
+		}
+		taskID, err := executor.ForceLoad(req)
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+		c.JSON(http.StatusOK, taskID)
+
+	case models.GFSDistributeLoad:
 		if req.Path == nil {
 			c.JSON(http.StatusBadRequest, "path is required")
 			return
@@ -37,7 +49,7 @@ func GoosefsExecute(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusOK, taskID)
-	case models.GooseFSLoadMetadata:
+	case models.GFSLoadMetadata:
 		if req.Path == nil {
 			c.String(http.StatusBadRequest, "path is required")
 			return
@@ -48,7 +60,7 @@ func GoosefsExecute(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusOK, taskID)
-	case models.GooseFSList:
+	case models.GFSList:
 
 		if req.TimeOut == nil {
 			req.TimeOut = tea.Int(30) // 默认 30 秒
