@@ -121,15 +121,11 @@ func GetTaskStatus(filter models.FilterGoosefsTaskRequest) (models.TasksStatus, 
 		Data:   make(map[string]models.TaskInfo, len(tasks)),
 		Status: models.TaskStatusSuccess,
 	}
-	successCount := 0
+	successTaskCount := 0
 	isRunning := false
 	for _, task := range tasks {
 		// Path必须会有的，这里防止错误情况
 		if task.Path == nil {
-			continue
-		}
-		//缓存目录没有变化的不展示出来,当请求为GFSForceLoad,GFSDistributeLoad时
-		if task.SuccessCount != nil && *task.SuccessCount == 0 && (task.Action == models.GFSForceLoad || task.Action == models.GFSDistributeLoad) {
 			continue
 		}
 
@@ -138,24 +134,29 @@ func GetTaskStatus(filter models.FilterGoosefsTaskRequest) (models.TasksStatus, 
 		}
 
 		if task.ExitCode != nil && task.SuccessCount != nil {
-			taskinfo.Count = *task.SuccessCount
+			taskinfo.SuccessCount = *task.SuccessCount
 			taskinfo.ExitCode = *task.ExitCode
+			taskinfo.Total = *task.Total
 			// 任务执行完成
 			if GetCmdStatus(*task.ExitCode) == models.TaskStatusSuccess {
-				successCount++
+				successTaskCount++
 			}
 		}
 		if task.ExitCode == nil {
 			isRunning = true
 		}
-
+		//缓存目录没有变化的不展示出来,当请求为GFSForceLoad,GFSDistributeLoad时
+		if task.SuccessCount != nil && *task.SuccessCount == 0 && (task.Action == models.GFSForceLoad || task.Action == models.GFSDistributeLoad) {
+			continue //不执行数据展示
+		}
 		resp.Data[task.ID] = taskinfo
+
 	}
 	if isRunning {
 		resp.Status = models.TaskStatusRunning
 	} else {
-		if successCount != len(tasks) {
-			if successCount > 0 {
+		if successTaskCount != len(tasks) {
+			if successTaskCount > 0 {
 				resp.Status = models.TaskStatusNotallSuccess
 			} else {
 				resp.Status = models.TaskStatusFailed
