@@ -35,7 +35,7 @@ func checkTasksIsFinished(act models.GooseFSAction, task_name *string) {
 
 		var msg string
 		if status.Status != models.TaskStatusSuccess {
-			msg = "告警:" + string(act) + "\t" + string(status.Status) + "for task " + tea.StringValue(task_name) + "\n"
+			msg = "告警:" + string(act) + " " + string(status.Status) + " for task " + tea.StringValue(task_name) + "\n"
 		} else {
 			msg = "通知:" + string(act) + "task " + tea.StringValue(task_name) + "" + "\tSUCCESS!\n"
 		}
@@ -65,7 +65,7 @@ func DistrubuteLoad(req models.GooseFSRequest) ([]string, error) {
 			TaskName: tea.StringValue(req.TaskName),
 			Command:  *config.Config.Bin,
 			// Args:    []string{"fs", "distributedLoad", "--replication", "1", *p},
-			Args: []string{"fs", "distributedLoad", "--replication", "1", *p, "grep", "Successfully loaded path"}, // 只存入新加载的文件其他无关信息过滤掉
+			Args: []string{"fs", "distributedLoad", "--replication", "1", *p, "|", "grep", "Successfully loaded path"}, // 只存入新加载的文件其他无关信息过滤掉
 		})
 		if err != nil {
 			return nil, err
