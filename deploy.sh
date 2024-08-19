@@ -4,7 +4,7 @@
 systemctl stop goosefs-cli2api
 
 # with build
-if [$1 = "wb" ]; then
+if [$1 == "wb" ]; then
     CGO_ENABLED=1 go build -o /usr/bin/goosefs-cli2api -ldflags "-X main.version=localbuild-beta.$(date +%Y%m%d)"
 fi
 
