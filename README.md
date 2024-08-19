@@ -10,8 +10,15 @@
 - [x] docker-compose 容器部署启动；
 - [x] 提交的任务支持多 Path, 支持任务带 `task_name`;
 - [x] 完成的任务支持发送通知到钉钉群，异常也通知出来，有`task_name`的会以 task_name 为集合进行通报；注意钉钉机器人需要设置关键字：告警、通知；
-- [x] 查询支持传入 `taskid`或者 `task_name`;
-      <a name="pfpm4"></a>
+- [x] 查询支持传入 `taskid`或者 `task_name`；
+- [x] 在发起钉钉通知的时候，只告警有新数据加载的路径，没有的隐藏掉；
+- [x] GooseFSForceLoad 该步骤执行的是先去 LoadMetadata，然后再去 DistributeLoad，这样彻底更新；
+      <a name="ahcmA"></a>
+
+# 如何部署
+
+因为需要用到宿主机的 goosefs 环境，所以放弃了 docker 部署方案，采用 systemctl。<br />部署脚本：[https://github.com/zhoushoujianwork/goosefs-cli2api/blob/master/deploy.sh](https://github.com/zhoushoujianwork/goosefs-cli2api/blob/master/deploy.sh)<br />配置文件内容：[https://github.com/zhoushoujianwork/goosefs-cli2api/blob/master/config/config.yaml](https://github.com/zhoushoujianwork/goosefs-cli2api/blob/master/config/config.yaml)<br />配置文件支持当前运行目录，`/etc/goosefs-cli2api/`目录，日志文件`/opt/goosefs-cli2api/app.log`其他目录见 `config.yaml`，默认运行端口 8080。
+<a name="pfpm4"></a>
 
 # 举个例子
 
@@ -22,8 +29,9 @@
 支持三种任务：
 
 1. GooseFSList，查询直接返回
-2. GooseFSLoadMetadata，以任务的方式挂起，结果通过下面接口查询
-3. GooseFSDistributeLoad，以任务的方式挂起，结果通过下面接口查询
+2. GooseFSForceLoad，强制先执行 GooseFSLoadMetadata，然后再执行 GooseFSDistributeLoad；
+3. GooseFSLoadMetadata，以任务的方式挂起，结果通过下面接口查询
+4. GooseFSDistributeLoad，以任务的方式挂起，结果通过下面接口查询
    <a name="bdQGS"></a>
 
 #### 查询缓存目录 GooseFSList
@@ -39,6 +47,27 @@ curl --location --request POST 'http://localhost:8080/api/v1/gfs' \
     "/"
   ]
 }'
+```
+
+<a name="fbMUq"></a>
+
+#### GooseFSDistributeLoad
+
+```bash
+curl --location --request POST 'http://localhost:8080/api/v1/gfs' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+  "action": "GooseFSForceLoad",
+  "task_name": "test_task_name",
+  "path": [
+    "/data-datalake-dataprod-bj-1251949819/deltalake/npd_temp.db"
+  ]
+}'
+
+# 返回任务 ID
+[
+    "cd3fe749-4e32-4415-85df-57c3ddbea1b4"
+]
 ```
 
 <a name="ca6Jq"></a>
@@ -88,7 +117,7 @@ curl --location --request POST 'http://localhost:8080/api/v1/gfs' \
 
 ### 任务查询接口
 
-查询支持参数：<br />`task_id`：支持单个任务的查询<br />`test_task_name`：任务维度的查询，支持查询这一组任务的所有缓存任务的结果，返回整体任务状态
+查询支持参数：<br />`task_id`：支持单个任务的查询<br />`test_task_name`：任务维度的查询，支持查询这一组任务的所有缓存任务的结果，返回整体任务状态<br />`action`：GooseFSForceLoad，GooseFSDistributeLoad，GooseFSLoadMetadata<br />`status`：success，failed，notallsuccess，running
 <a name="FoopH"></a>
 
 #### 查询任务输出
