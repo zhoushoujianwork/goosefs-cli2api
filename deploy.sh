@@ -5,10 +5,10 @@
 # with build
 if [ "$1" = "build" ]; then
     CGO_ENABLED=1 go build -o /tmp/goosefs-cli2api -ldflags "-X main.version=localbuild-beta.$(date +%Y%m%d)"
+    systemctl stop goosefs-cli2api
+    cp /tmp/goosefs-cli2api /usr/bin/goosefs-cli2api
 fi
 
-systemctl stop goosefs-cli2api
-cp /tmp/goosefs-cli2api /usr/bin/goosefs-cli2api
 # system 服务方式
 cat <<EOF > /etc/systemd/system/goosefs-cli2api.service
 [Unit]
