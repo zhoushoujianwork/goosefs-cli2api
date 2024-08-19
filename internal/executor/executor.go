@@ -118,8 +118,9 @@ func GetTaskStatus(filter models.FilterGoosefsTaskRequest) (models.TasksStatus, 
 		return models.TasksStatus{}, fmt.Errorf("no task found by filter: %s", tea.Prettify(filter))
 	}
 	resp := models.TasksStatus{
-		Data:   make(map[string]models.TaskInfo, len(tasks)),
-		Status: models.TaskStatusSuccess,
+		Data:      make(map[string]models.TaskInfo, len(tasks)),
+		Status:    models.TaskStatusSuccess,
+		TotalTask: len(tasks),
 	}
 	successTaskCount := 0
 	isRunning := false

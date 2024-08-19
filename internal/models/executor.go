@@ -16,8 +16,9 @@ const (
 
 // Data只输出有 OutPut内容的 格式如下{"taskid":"loadPath:记录数量"}
 type TasksStatus struct {
-	Data   map[string]TaskInfo `json:"data"` // 这里展示的是每个 Path任务的 taskID 和任务执行的 CMD结果
-	Status TaskState           `json:"status"`
+	Data      map[string]TaskInfo `json:"data"` // 这里展示的是每个 Path任务的 taskID 和任务执行的 CMD结果
+	Status    TaskState           `json:"status"`
+	TotalTask int                 `json:"total_task"`
 }
 
 type TaskInfo struct {
