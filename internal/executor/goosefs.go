@@ -237,7 +237,7 @@ func Report() (string, error) {
 
 func GetCmdStatus(exitCode string) models.TaskState {
 	switch exitCode {
-	case "ExitCode: 0":
+	case "exit status 0":
 		return models.TaskStatusSuccess
 	case "<nil>":
 		return models.TaskStatusRunning
