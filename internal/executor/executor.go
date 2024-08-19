@@ -137,7 +137,7 @@ func GetTaskStatus(filter models.FilterGoosefsTaskRequest) (models.TasksStatus, 
 		if task.ExitCode != nil && task.SuccessCount != nil {
 			taskinfo.SuccessCount = *task.SuccessCount
 			taskinfo.ExitCode = *task.ExitCode
-			taskinfo.Total = *task.Total
+			taskinfo.TotalFile = *task.Total
 			// 任务执行完成
 			if GetCmdStatus(*task.ExitCode) == models.TaskStatusSuccess {
 				successTaskCount++

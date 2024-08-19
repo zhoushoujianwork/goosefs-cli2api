@@ -25,5 +25,5 @@ type TaskInfo struct {
 	Path         string `json:"path"`          // 任务缓存的路径
 	ExitCode     string `json:"exit_code"`     // exit_code 为 0 表示任务成功; <nil> 执行中
 	SuccessCount int    `json:"success_count"` // 成功 load的对象数量
-	Total        int    `json:"total"`         // 总共 load的对象数量
+	TotalFile    int    `json:"total_file"`    // 总共 load的对象数量
 }
