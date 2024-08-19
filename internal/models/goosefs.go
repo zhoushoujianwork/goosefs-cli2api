@@ -34,12 +34,13 @@ func (r *GoosefsTaskRequest) ToGoosefsTask(taskID string) *GoosefsTask {
 }
 
 type GoosefsTask struct {
-	ID       string        `gorm:"column:id;type:text;not null;primary_key" json:"id"`
-	Action   GooseFSAction `gorm:"column:action;type:text" json:"action"`
-	TaskName *string       `gorm:"column:task_name;type:text" json:"task_name"`
-	Path     *string       `gorm:"column:path;type:text" json:"path"`
-	ExitCode *string       `gorm:"column:exit_code;type:text" json:"exit_code"`
-	Count    *int          `gorm:"column:count;type:text" json:"count"`
+	ID           string        `gorm:"column:id;type:text;not null;primary_key" json:"id"`
+	Action       GooseFSAction `gorm:"column:action;type:text" json:"action"`
+	TaskName     *string       `gorm:"column:task_name;type:text" json:"task_name"`
+	Path         *string       `gorm:"column:path;type:text" json:"path"`
+	ExitCode     *string       `gorm:"column:exit_code;type:text" json:"exit_code"`
+	SuccessCount *int          `gorm:"column:success_count;type:text" json:"success_count"`
+	Total        *int          `gorm:"column:total;type:text" json:"total"`
 }
 
 func (*GoosefsTask) TableName() string {
@@ -47,8 +48,9 @@ func (*GoosefsTask) TableName() string {
 }
 
 type UpdateGoosefsTaskRequest struct {
-	ExitCode *string `json:"exit_code"`
-	Count    *int    `json:"count"`
+	ExitCode     *string `json:"exit_code"`
+	SuccessCount *int    `json:"success_count"`
+	Total        *int    `json:"total"`
 }
 
 type FilterGoosefsTaskRequest struct {

@@ -64,8 +64,8 @@ func DistrubuteLoad(req models.GooseFSRequest) ([]string, error) {
 			Path:     *p,
 			TaskName: tea.StringValue(req.TaskName),
 			Command:  *config.Config.Bin,
-			// Args:    []string{"fs", "distributedLoad", "--replication", "1", *p},
-			Args: []string{"fs", "distributedLoad", "--replication", "1", *p, "|", "grep", "Successfully loaded path"}, // 只存入新加载的文件其他无关信息过滤掉
+			Args:     []string{"fs", "distributedLoad", "--replication", "1", *p},
+			// Args: []string{"fs", "distributedLoad", "--replication", "1", *p, "|grep 'Successfully loaded path'"}, // 只存入新加载的文件其他无关信息过滤掉
 		})
 		if err != nil {
 			return nil, err

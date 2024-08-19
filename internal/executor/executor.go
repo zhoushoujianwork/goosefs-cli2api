@@ -55,24 +55,28 @@ func addTask(req TaskRequest) (string, error) {
 		cmd.Wait()
 		outFile.Close()
 		// 读取文件行数
-		var count int
+		var successCount, loadedCount int
+
 		defer func() {
 			// 任务结束后更新任务状态
-			err := config.DB.UpdateGoosefsTask(taskID, models.UpdateGoosefsTaskRequest{ExitCode: tea.String(cmd.ProcessState.String()), Count: tea.Int(count)})
+			err := config.DB.UpdateGoosefsTask(taskID, models.UpdateGoosefsTaskRequest{
+				ExitCode:     tea.String(cmd.ProcessState.String()),
+				SuccessCount: tea.Int(successCount),
+				Total:        tea.Int(loadedCount + successCount)})
 			if err != nil {
 				log.Errorf("UpdateGoosefsPathStatus error: %v", err)
 			}
 		}()
 		file, err := os.Open(outputPath)
 		if err != nil {
-			count = -1
+			successCount = -1
 			log.Errorf("count error: open file error: %v", err)
 			return
 		}
 		defer file.Close()
 		bytes, err := ioutil.ReadAll(file)
 		if err != nil {
-			count = -2
+			successCount = -2
 			log.Errorf("count error: read file error: %v", err)
 			return
 		}
@@ -81,7 +85,18 @@ func addTask(req TaskRequest) (string, error) {
 			if line == "" {
 				continue
 			}
-			count++
+			switch req.Action {
+			case models.GFSDistributeLoad, models.GFSForceLoad:
+				// 只统计Successfully loaded path的行数
+				if strings.Contains(line, "Successfully loaded path") {
+					successCount++
+				} else if strings.Contains(line, "is already fully loaded in GooseFS") {
+					loadedCount++
+				}
+			default:
+				// 输出结果不需要统计成功失败的
+				continue
+			}
 		}
 	}()
 
@@ -114,7 +129,7 @@ func GetTaskStatus(filter models.FilterGoosefsTaskRequest) (models.TasksStatus, 
 			continue
 		}
 		//缓存目录没有变化的不展示出来,当请求为GFSForceLoad,GFSDistributeLoad时
-		if task.Count != nil && *task.Count == 0 && (task.Action == models.GFSForceLoad || task.Action == models.GFSDistributeLoad) {
+		if task.SuccessCount != nil && *task.SuccessCount == 0 && (task.Action == models.GFSForceLoad || task.Action == models.GFSDistributeLoad) {
 			continue
 		}
 
@@ -122,8 +137,8 @@ func GetTaskStatus(filter models.FilterGoosefsTaskRequest) (models.TasksStatus, 
 			Path: *task.Path,
 		}
 
-		if task.ExitCode != nil && task.Count != nil {
-			taskinfo.Count = *task.Count
+		if task.ExitCode != nil && task.SuccessCount != nil {
+			taskinfo.Count = *task.SuccessCount
 			taskinfo.ExitCode = *task.ExitCode
 			// 任务执行完成
 			if GetCmdStatus(*task.ExitCode) == models.TaskStatusSuccess {
