@@ -5,5 +5,4 @@ output_dir: "/tmp"
 debug: false
 dingtalk_alert:
   token: ""
-
 db_file: "/opt/goosefs-cli2api/goosefs.db"

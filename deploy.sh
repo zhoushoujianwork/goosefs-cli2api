@@ -13,7 +13,7 @@ ExecStart=/usr/bin/goosefs-cli2api run
 Restart=on-failure
 RestartSec=5
 User=root
-Environment=GOOSEFS_ENV=production
+Environment=CGO_ENABLED=1
 WorkingDirectory=/root
 
 [Install]
