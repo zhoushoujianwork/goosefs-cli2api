@@ -35,6 +35,7 @@ func checkTasksIsFinished(act models.GooseFSAction, task_name *string) {
 		var msg string
 		switch status.Status {
 		case models.TaskStatusRunning:
+			log.Debugf("task %s is running wait for it done", tea.StringValue(task_name))
 			continue
 		case models.TaskStatusSuccess:
 			msg = "通知:" + string(act) + " " + string(status.Status) + " for task " + tea.StringValue(task_name) + "\n"
