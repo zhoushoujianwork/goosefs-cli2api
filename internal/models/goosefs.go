@@ -9,6 +9,16 @@ const (
 	GFSList           GooseFSAction = "GooseFSList"
 )
 
+type GooseFSExecuteResponse struct {
+	Results []Result `json:"results"`
+	Total   int      `json:"total"`
+}
+
+type Result struct {
+	TaskID string `json:"task_id"`
+	Path   string `json:"path"`
+}
+
 // 外部请求支持多路径
 type GooseFSRequest struct {
 	Action   GooseFSAction `json:"action" binding:"required"` // 必填 0: GooseFSDistributeLoad 1: GooseFSLoadMetadata 2: GooseFSList 3: GooseFSForceLoad

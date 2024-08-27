@@ -8,4 +8,4 @@ help:
 swagger:
 	swag init -g main.go --parseDependency --parseDepth 1 --parseInternal
 run:
-	go run main.go
+	go run main.go run

@@ -1,10 +1,10 @@
 definitions:
-  models.GFSAction:
+  models.GooseFSAction:
     enum:
-    - GFSForceLoad
-    - GFSDistributeLoad
-    - GFSLoadMetadata
-    - GFSList
+    - GooseFSForceLoad
+    - GooseFSDistributeLoad
+    - GooseFSLoadMetadata
+    - GooseFSList
     type: string
     x-enum-comments:
       GFSDistributeLoad: 缓存数据，他的依据是 Master 上的 metadata
@@ -15,11 +15,20 @@ definitions:
     - GFSDistributeLoad
     - GFSLoadMetadata
     - GFSList
+  models.GooseFSExecuteResponse:
+    properties:
+      results:
+        items:
+          $ref: '#/definitions/models.Result'
+        type: array
+      total:
+        type: integer
+    type: object
   models.GooseFSRequest:
     properties:
       action:
         allOf:
-        - $ref: '#/definitions/models.GFSAction'
+        - $ref: '#/definitions/models.GooseFSAction'
         description: '必填 0: GooseFSDistributeLoad 1: GooseFSLoadMetadata 2: GooseFSList
           3: GooseFSForceLoad'
       path:
@@ -43,6 +52,13 @@ definitions:
       task_id:
         type: string
       task_name:
+        type: string
+    type: object
+  models.Result:
+    properties:
+      path:
+        type: string
+      task_id:
         type: string
     type: object
 host: localhost:8080
@@ -69,9 +85,9 @@ paths:
       - application/json
       responses:
         "200":
-          description: task_id
+          description: OK
           schema:
-            type: string
+            $ref: '#/definitions/models.GooseFSExecuteResponse'
       summary: execute for goosefs cli
       tags:
       - GooseFS

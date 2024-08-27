@@ -29,15 +29,17 @@ func checkTasksIsFinished(act models.GooseFSAction, task_name *string) {
 			Action:   &act,
 		})
 		if err != nil {
-			log.Errorf("checkTasksIsFinished error: %s", err)
-			continue
+			log.Panicf("checkTasksIsFinished error: %s", err)
 		}
 
 		var msg string
-		if status.Status != models.TaskStatusSuccess {
+		switch status.Status {
+		case models.TaskStatusRunning:
+			continue
+		case models.TaskStatusSuccess:
+			msg = "通知:" + string(act) + " " + string(status.Status) + " for task " + tea.StringValue(task_name) + "\n"
+		default:
 			msg = "告警:" + string(act) + " " + string(status.Status) + " for task " + tea.StringValue(task_name) + "\n"
-		} else {
-			msg = "通知:" + string(act) + "task " + tea.StringValue(task_name) + "" + "\tSUCCESS!\n"
 		}
 
 		dingtalk.SendAlert(msg + tea.Prettify(status))
@@ -53,11 +55,11 @@ func checkTasksIsFinished(act models.GooseFSAction, task_name *string) {
 实现任务完成告警，每次任务进来后挂起一个任务查询的协程，直到任务状态不是 running；
 */
 
-func DistrubuteLoad(req models.GooseFSRequest) ([]string, error) {
-	taskids := make([]string, 0)
+func DistrubuteLoad(req models.GooseFSRequest) (models.GooseFSExecuteResponse, error) {
+	results := make([]models.Result, 0)
 	for _, p := range req.Path {
 		if p == nil || *p == "" {
-			return nil, fmt.Errorf("path is required, should not be empty")
+			return models.GooseFSExecuteResponse{}, fmt.Errorf("path is required, should not be empty")
 		}
 		taskID, err := addTask(TaskRequest{
 			Action:   models.GFSDistributeLoad,
@@ -68,22 +70,25 @@ func DistrubuteLoad(req models.GooseFSRequest) ([]string, error) {
 			// Args: []string{"fs", "distributedLoad", "--replication", "1", *p, "|grep 'Successfully loaded path'"}, // 只存入新加载的文件其他无关信息过滤掉
 		})
 		if err != nil {
-			return nil, err
+			return models.GooseFSExecuteResponse{}, err
 		}
-		taskids = append(taskids, taskID)
+		results = append(results, models.Result{
+			TaskID: taskID,
+			Path:   *p,
+		})
 	}
 	go checkTasksIsFinished(models.GFSDistributeLoad, req.TaskName)
-	return taskids, nil
+	return models.GooseFSExecuteResponse{Results: results, Total: len(results)}, nil
 }
 
 /*
 ./bin/goosefs fs loadMetadata -R /data-datalake/deltalake/aaa.db/bbb/
 */
-func LoadMetadata(req models.GooseFSRequest) ([]string, error) {
-	taskids := make([]string, 0)
+func LoadMetadata(req models.GooseFSRequest) (models.GooseFSExecuteResponse, error) {
+	results := make([]models.Result, 0)
 	for _, p := range req.Path {
 		if p == nil || *p == "" {
-			return nil, fmt.Errorf("path is required, should not be empty")
+			return models.GooseFSExecuteResponse{}, fmt.Errorf("path is required, should not be empty")
 		}
 		taskID, err := addTask(TaskRequest{
 			TaskName: tea.StringValue(req.TaskName),
@@ -93,24 +98,27 @@ func LoadMetadata(req models.GooseFSRequest) ([]string, error) {
 			Action:   models.GFSLoadMetadata,
 		})
 		if err != nil {
-			return nil, err
+			return models.GooseFSExecuteResponse{}, err
 		}
-		taskids = append(taskids, taskID)
+		results = append(results, models.Result{
+			TaskID: taskID,
+			Path:   *p,
+		})
 	}
 	go checkTasksIsFinished(models.GFSLoadMetadata, req.TaskName)
-	return taskids, nil
+	return models.GooseFSExecuteResponse{Results: results, Total: len(results)}, nil
 }
 
 /*
 GooseFSForceLoad 该步骤执行的是先去 LoadMetadata，然后再去 DistributeLoad，这样彻底更新
 先执行 LoadMetadata，成功后再执行 DistributeLoad
 */
-func ForceLoad(req models.GooseFSRequest) ([]string, error) {
-	taskids := make([]string, 0)
+func ForceLoad(req models.GooseFSRequest) (models.GooseFSExecuteResponse, error) {
+	results := make([]models.Result, 0)
 	var errs []string
 	for _, p := range req.Path {
 		if p == nil || *p == "" {
-			return nil, fmt.Errorf("path is required, should not be empty")
+			return models.GooseFSExecuteResponse{}, fmt.Errorf("path is required, should not be empty")
 		}
 		_, err := runCmd(*config.Config.Bin, []string{"fs", "loadMetadata", "-R", *p})
 		if err != nil {
@@ -126,18 +134,21 @@ func ForceLoad(req models.GooseFSRequest) ([]string, error) {
 			Action:   models.GFSForceLoad,
 		})
 		if err != nil {
-			return nil, err
+			return models.GooseFSExecuteResponse{}, err
 		}
-		taskids = append(taskids, taskID)
+		results = append(results, models.Result{
+			TaskID: taskID,
+			Path:   *p,
+		})
 	}
 	if len(errs) > 0 {
-		if len(taskids) != 0 {
-			return nil, fmt.Errorf("success ids: %s, some task is failed: %s", strings.Join(taskids, ","), strings.Join(errs, "\n"))
+		if len(results) != 0 {
+			return models.GooseFSExecuteResponse{}, fmt.Errorf("some task is failed: %s", strings.Join(errs, "\n"))
 		}
-		return nil, fmt.Errorf(fmt.Sprintf("all task failed: %s", strings.Join(errs, "\n")))
+		return models.GooseFSExecuteResponse{}, fmt.Errorf(fmt.Sprintf("all task failed: %s", strings.Join(errs, "\n")))
 	}
 	go checkTasksIsFinished(models.GFSForceLoad, req.TaskName)
-	return taskids, nil
+	return models.GooseFSExecuteResponse{Results: results, Total: len(results)}, nil
 }
 
 /*

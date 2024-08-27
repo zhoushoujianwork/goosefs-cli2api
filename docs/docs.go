@@ -43,9 +43,9 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "task_id",
+                        "description": "OK",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/models.GooseFSExecuteResponse"
                         }
                     }
                 }
@@ -158,13 +158,13 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "models.GFSAction": {
+        "models.GooseFSAction": {
             "type": "string",
             "enum": [
-                "GFSForceLoad",
-                "GFSDistributeLoad",
-                "GFSLoadMetadata",
-                "GFSList"
+                "GooseFSForceLoad",
+                "GooseFSDistributeLoad",
+                "GooseFSLoadMetadata",
+                "GooseFSList"
             ],
             "x-enum-comments": {
                 "GFSDistributeLoad": "缓存数据，他的依据是 Master 上的 metadata",
@@ -178,6 +178,20 @@ const docTemplate = `{
                 "GFSList"
             ]
         },
+        "models.GooseFSExecuteResponse": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Result"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "models.GooseFSRequest": {
             "type": "object",
             "required": [
@@ -189,7 +203,7 @@ const docTemplate = `{
                     "description": "必填 0: GooseFSDistributeLoad 1: GooseFSLoadMetadata 2: GooseFSList 3: GooseFSForceLoad",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/models.GFSAction"
+                            "$ref": "#/definitions/models.GooseFSAction"
                         }
                     ]
                 },
@@ -217,6 +231,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "task_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Result": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string"
+                },
+                "task_id": {
                     "type": "string"
                 }
             }

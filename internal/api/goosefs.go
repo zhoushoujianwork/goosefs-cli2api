@@ -15,7 +15,7 @@ import (
 // @Accept json
 // @Produce json
 // @Param req body models.GooseFSRequest true "DistrubuteLoad"
-// @Success 200 {string} string "task_id"
+// @Success 200 {object} models.GooseFSExecuteResponse
 // @Router /api/v1/gfs [post]
 func GoosefsExecute(c *gin.Context) {
 	var req models.GooseFSRequest
@@ -31,35 +31,35 @@ func GoosefsExecute(c *gin.Context) {
 			c.String(http.StatusBadRequest, "path is required")
 			return
 		}
-		taskID, err := executor.ForceLoad(req)
+		resp, err := executor.ForceLoad(req)
 		if err != nil {
 			c.String(http.StatusInternalServerError, err.Error())
 			return
 		}
-		c.JSON(http.StatusOK, taskID)
+		c.JSON(http.StatusOK, resp)
 
 	case models.GFSDistributeLoad:
 		if req.Path == nil {
 			c.JSON(http.StatusBadRequest, "path is required")
 			return
 		}
-		taskID, err := executor.DistrubuteLoad(req)
+		resp, err := executor.DistrubuteLoad(req)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, err.Error())
 			return
 		}
-		c.JSON(http.StatusOK, taskID)
+		c.JSON(http.StatusOK, resp)
 	case models.GFSLoadMetadata:
 		if req.Path == nil {
 			c.String(http.StatusBadRequest, "path is required")
 			return
 		}
-		taskID, err := executor.LoadMetadata(req)
+		resp, err := executor.LoadMetadata(req)
 		if err != nil {
 			c.String(http.StatusInternalServerError, err.Error())
 			return
 		}
-		c.JSON(http.StatusOK, taskID)
+		c.JSON(http.StatusOK, resp)
 	case models.GFSList:
 
 		if req.TimeOut == nil {
