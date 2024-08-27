@@ -43,8 +43,15 @@ func checkTasksIsFinished(act models.GooseFSAction, task_name *string) {
 			msg = "告警:" + string(act) + " " + string(status.Status) + " for task " + tea.StringValue(task_name) + "\n"
 		}
 
-		dingtalk.SendAlert(msg + tea.Prettify(status))
-
+		// 优化降低通知文本 body 大小不合法;solution:请保持大小在 20000bytes
+		for _, taskInfo := range status.Data {
+			msg += fmt.Sprintf("path: %s %d/%d\n", taskInfo.Path, taskInfo.SuccessCount, taskInfo.TotalFile)
+			if len(msg) > 20000-5 {
+				msg += "..."
+				break
+			}
+		}
+		dingtalk.SendAlert(msg)
 		break
 	}
 }
