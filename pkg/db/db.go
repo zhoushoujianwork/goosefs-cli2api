@@ -42,7 +42,7 @@ func (d *DB) UpdateGoosefsTask(taskID string, req models.UpdateGoosefsTaskReques
 func (d *DB) GetGoosefsTask(filter models.FilterGoosefsTaskRequest) ([]models.GoosefsTask, error) {
 	sql := d.db.Model(&models.GoosefsTask{})
 	if filter.TaskID != nil {
-		sql = sql.Where("task_id = ?", *filter.TaskID)
+		sql = sql.Where("id = ?", *filter.TaskID)
 	}
 	if filter.TaskName != nil {
 		sql = sql.Where("task_name = ?", *filter.TaskName)
