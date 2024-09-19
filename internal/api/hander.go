@@ -34,10 +34,9 @@ func RegisterRoutes(router *gin.Engine) {
 // @Description GetTaskStatus
 // @Accept json
 // @Produce json
-// @Param task_id query string true "task_id"
+// @Param task_id query string false "task_id"
 // @Param task_name query string false "task_name"
-// @Param action query string false "action"
-// @Param status query string false "status"
+// @Param action query string false "action: GooseFSForceLoad,GooseFSDistributeLoad,GooseFSLoadMetadata,GooseFSList"
 // @Success 200 {object} models.QueryTaskRequest
 // @Router /api/v1/status [get]
 func getTaskStatus(c *gin.Context) {
@@ -55,11 +54,6 @@ func getTaskStatus(c *gin.Context) {
 	if action != "" {
 		gfsAction := models.GooseFSAction(action)
 		req.Action = &gfsAction
-	}
-	taskStatus := c.Query("status")
-	if taskStatus != "" {
-		gfsStatus := models.TaskState(taskStatus)
-		req.Status = &gfsStatus
 	}
 	log.Debugf(tea.Prettify(req))
 	status, err := executor.GetTaskStatus(req)

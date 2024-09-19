@@ -131,7 +131,9 @@ func GetTaskStatus(filter models.FilterGoosefsTaskRequest) (models.TasksStatus, 
 		}
 
 		taskinfo := models.TaskInfo{
-			Path: *task.Path,
+			Path:      *task.Path,
+			TaskName:  *task.TaskName,
+			CreatedAt: task.CreatedAt,
 		}
 
 		if task.ExitCode != nil && task.SuccessCount != nil {
@@ -147,9 +149,10 @@ func GetTaskStatus(filter models.FilterGoosefsTaskRequest) (models.TasksStatus, 
 			isRunning = true
 		}
 		//缓存目录没有变化的不展示出来,当请求为GFSForceLoad,GFSDistributeLoad时
-		if task.SuccessCount != nil && *task.SuccessCount == 0 && (task.Action == models.GFSForceLoad || task.Action == models.GFSDistributeLoad) {
-			continue //不执行数据展示
-		}
+		// if task.SuccessCount != nil && *task.SuccessCount == 0 && (task.Action == models.GFSForceLoad || task.Action == models.GFSDistributeLoad) {
+		// 	log.Debugf("skip show task: %s", tea.Prettify(task))
+		// 	continue //不执行数据展示
+		// }
 		resp.Data[task.ID] = taskinfo
 
 	}

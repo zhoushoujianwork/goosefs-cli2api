@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type GooseFSAction string
 
 const (
@@ -36,15 +38,17 @@ type GoosefsTaskRequest struct {
 
 func (r *GoosefsTaskRequest) ToGoosefsTask(taskID string) *GoosefsTask {
 	return &GoosefsTask{
-		ID:       taskID,
-		Action:   r.Action,
-		TaskName: r.TaskName,
-		Path:     r.Path,
+		ID:        taskID,
+		Action:    r.Action,
+		TaskName:  r.TaskName,
+		Path:      r.Path,
+		CreatedAt: time.Now().Local(),
 	}
 }
 
 type GoosefsTask struct {
 	ID           string        `gorm:"column:id;type:text;not null;primary_key" json:"id"`
+	CreatedAt    time.Time     `gorm:"column:created_at;type:datetime" json:"created_at"`
 	Action       GooseFSAction `gorm:"column:action;type:text" json:"action"`
 	TaskName     *string       `gorm:"column:task_name;type:text" json:"task_name"`
 	Path         *string       `gorm:"column:path;type:text" json:"path"`
@@ -67,7 +71,7 @@ type FilterGoosefsTaskRequest struct {
 	TaskID   *string        `json:"task_id"`
 	TaskName *string        `json:"task_name"`
 	Action   *GooseFSAction `json:"action"`
-	Status   *TaskState     `json:"status"`
+	// Status   *TaskState     `json:"status"`
 }
 
 // type GoosefsPathStatus struct {

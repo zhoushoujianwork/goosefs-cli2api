@@ -50,9 +50,6 @@ func (d *DB) GetGoosefsTask(filter models.FilterGoosefsTaskRequest) ([]models.Go
 	if filter.Action != nil {
 		sql = sql.Where("action = ?", *filter.Action)
 	}
-	if filter.Status != nil {
-		sql = sql.Where("status = ?", *filter.Status)
-	}
 	var tasks []models.GoosefsTask
 	err := sql.Find(&tasks).Error
 	return tasks, err

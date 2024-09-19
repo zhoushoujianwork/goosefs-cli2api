@@ -254,6 +254,8 @@ func GetCmdStatus(exitCode string) models.TaskState {
 		return models.TaskStatusSuccess
 	case "<nil>":
 		return models.TaskStatusRunning
+	case "restarted":
+		return models.TaskStatusRestarted
 	default:
 		return models.TaskStatusFailed
 	}

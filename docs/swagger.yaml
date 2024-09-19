@@ -138,19 +138,14 @@ paths:
       - description: task_id
         in: query
         name: task_id
-        required: true
         type: string
       - description: task_name
         in: query
         name: task_name
         type: string
-      - description: action
+      - description: 'action: GooseFSForceLoad,GooseFSDistributeLoad,GooseFSLoadMetadata,GooseFSList'
         in: query
         name: action
-        type: string
-      - description: status
-        in: query
-        name: status
         type: string
       produces:
       - application/json

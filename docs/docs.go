@@ -124,8 +124,7 @@ const docTemplate = `{
                         "type": "string",
                         "description": "task_id",
                         "name": "task_id",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
@@ -135,14 +134,8 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "action",
+                        "description": "action: GooseFSForceLoad,GooseFSDistributeLoad,GooseFSLoadMetadata,GooseFSList",
                         "name": "action",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "status",
-                        "name": "status",
                         "in": "query"
                     }
                 ],

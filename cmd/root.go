@@ -46,7 +46,4 @@ func init() {
 	// when this action is called directly.
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "debug mode")
-	if debug {
-		os.Setenv("DEBUG", "true")
-	}
 }

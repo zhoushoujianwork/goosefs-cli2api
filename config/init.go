@@ -16,9 +16,9 @@ var Config models.GooseFS
 var DB db.DB
 
 // 当前执行目录下的 config/config.yaml 配置文件中获取配置
-func Init() {
+func Init(debug bool) {
 
-	if os.Getenv("DEBUG") == "true" {
+	if debug {
 		Config.Debug = true
 	}
 	InitLog(Config.Debug)
