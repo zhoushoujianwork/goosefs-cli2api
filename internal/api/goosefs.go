@@ -31,12 +31,12 @@ func GoosefsExecute(c *gin.Context) {
 			c.String(http.StatusBadRequest, "path is required")
 			return
 		}
-		resp, err := executor.ForceLoad(req)
+		err := executor.ForceLoad(req)
 		if err != nil {
 			c.String(http.StatusInternalServerError, err.Error())
 			return
 		}
-		c.JSON(http.StatusOK, resp)
+		c.JSON(http.StatusOK, "success")
 
 	case models.GFSDistributeLoad:
 		if req.Path == nil {

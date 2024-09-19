@@ -5,7 +5,6 @@ import (
 	"goosefs-cli2api/config"
 	"goosefs-cli2api/internal/models"
 	"goosefs-cli2api/pkg/dingtalk"
-	"strings"
 	"time"
 
 	"github.com/xops-infra/noop/log"
@@ -121,42 +120,34 @@ func LoadMetadata(req models.GooseFSRequest) (models.GooseFSExecuteResponse, err
 GooseFSForceLoad 该步骤执行的是先去 LoadMetadata，然后再去 DistributeLoad，这样彻底更新
 先执行 LoadMetadata，成功后再执行 DistributeLoad
 */
-func ForceLoad(req models.GooseFSRequest) (models.GooseFSExecuteResponse, error) {
-	results := make([]models.Result, 0)
-	var errs []string
+func ForceLoad(req models.GooseFSRequest) error {
 	for _, p := range req.Path {
 		if p == nil || *p == "" {
-			return models.GooseFSExecuteResponse{}, fmt.Errorf("path is required, should not be empty")
+			return fmt.Errorf("path is required, should not be empty")
 		}
-		_, err := runCmd(*config.Config.Bin, []string{"fs", "loadMetadata", "-R", *p})
-		if err != nil {
-			log.Errorf("loadMetadata error: %s", err)
-			errs = append(errs, fmt.Errorf("loadMetadata for %s error: %s", *p, err).Error())
-			continue
-		}
-		taskID, err := addTask(TaskRequest{
-			TaskName: tea.StringValue(req.TaskName),
-			Command:  *config.Config.Bin,
-			Args:     []string{"fs", "distributedLoad", "--replication", "1", *p},
-			Path:     *p,
-			Action:   models.GFSForceLoad,
-		})
-		if err != nil {
-			return models.GooseFSExecuteResponse{}, err
-		}
-		results = append(results, models.Result{
-			TaskID: taskID,
-			Path:   *p,
-		})
-	}
-	if len(errs) > 0 {
-		if len(results) != 0 {
-			return models.GooseFSExecuteResponse{}, fmt.Errorf("some task is failed: %s", strings.Join(errs, "\n"))
-		}
-		return models.GooseFSExecuteResponse{}, fmt.Errorf(fmt.Sprintf("all task failed: %s", strings.Join(errs, "\n")))
+		// 防止阻塞，线程执行后续任务
+		go forceLoadExector(p, req)
 	}
 	go checkTasksIsFinished(models.GFSForceLoad, req.TaskName)
-	return models.GooseFSExecuteResponse{Results: results, Total: len(results)}, nil
+	return nil
+}
+
+func forceLoadExector(p *string, req models.GooseFSRequest) {
+	_, err := runCmd(*config.Config.Bin, []string{"fs", "loadMetadata", "-R", *p})
+	if err != nil {
+		log.Errorf("loadMetadata error: %s", err)
+	}
+	taskID, err := addTask(TaskRequest{
+		TaskName: tea.StringValue(req.TaskName),
+		Command:  *config.Config.Bin,
+		Args:     []string{"fs", "distributedLoad", "--replication", "1", *p},
+		Path:     *p,
+		Action:   models.GFSForceLoad,
+	})
+	if err != nil {
+		log.Errorf("addTask error: %s for path: %s", err, *p)
+	}
+	log.Infof("add success taskid: %s for path: %s", taskID, *p)
 }
 
 /*
