@@ -85,6 +85,7 @@ func DistrubuteLoad(req models.GooseFSRequest) (models.GooseFSExecuteResponse, e
 		})
 	}
 	go checkTasksIsFinished(models.GFSDistributeLoad, req.TaskName)
+	log.Infof("add DistrubuteLoad success for req: %s", tea.Prettify(req))
 	return models.GooseFSExecuteResponse{Results: results, Total: len(results)}, nil
 }
 
@@ -113,6 +114,7 @@ func LoadMetadata(req models.GooseFSRequest) (models.GooseFSExecuteResponse, err
 		})
 	}
 	go checkTasksIsFinished(models.GFSLoadMetadata, req.TaskName)
+	log.Infof("add LoadMetadata success for req: %s", tea.Prettify(req))
 	return models.GooseFSExecuteResponse{Results: results, Total: len(results)}, nil
 }
 
@@ -129,6 +131,7 @@ func ForceLoad(req models.GooseFSRequest) error {
 		go forceLoadExector(p, req)
 	}
 	go checkTasksIsFinished(models.GFSForceLoad, req.TaskName)
+	log.Infof("add ForceLoad success for req: %s", tea.Prettify(req))
 	return nil
 }
 
