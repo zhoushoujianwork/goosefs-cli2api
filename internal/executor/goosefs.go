@@ -101,7 +101,7 @@ func LoadMetadata(req models.GooseFSRequest) (models.GooseFSExecuteResponse, err
 		taskID, err := addTask(TaskRequest{
 			TaskName: tea.StringValue(req.TaskName),
 			Command:  *config.Config.Bin,
-			Args:     []string{"fs", "loadMetadata", "-R", *p},
+			Args:     []string{"fs", "loadMetadata", "-R", "-F", *p},
 			Path:     *p,
 			Action:   models.GFSLoadMetadata,
 		})
@@ -136,7 +136,7 @@ func ForceLoad(req models.GooseFSRequest) error {
 }
 
 func forceLoadExector(p *string, req models.GooseFSRequest) {
-	_, err := runCmd(*config.Config.Bin, []string{"fs", "loadMetadata", "-R", *p})
+	_, err := runCmd(*config.Config.Bin, []string{"fs", "loadMetadata", "-R", "-F", *p})
 	if err != nil {
 		log.Errorf("loadMetadata error: %s", err)
 	}
