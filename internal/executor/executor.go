@@ -28,7 +28,7 @@ type TaskRequest struct {
 func addTask(req TaskRequest) (string, error) {
 	taskID := uuid.New().String()
 	cmd := exec.Command(req.Command, req.Args...)
-
+	log.Infof("taskid: %s, cmd: %s %s", taskID, req.Command, strings.Join(req.Args, " "))
 	outputPath := utils.GenerateTaskID(req.TaskName, taskID)
 	outFile, err := os.Create(outputPath)
 	if err != nil {
