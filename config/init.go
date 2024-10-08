@@ -18,10 +18,7 @@ var DB db.DB
 // 当前执行目录下的 config/config.yaml 配置文件中获取配置
 func Init(debug bool) {
 
-	if debug {
-		Config.Debug = true
-	}
-	InitLog(Config.Debug)
+	InitLog(debug)
 
 	viper.SetConfigName("config") // 配置文件名(无扩展名)
 	viper.SetConfigType("yaml")   // 如果配置文件名中没有扩展名，则需要指定配置文件格式，如 "yaml"
@@ -48,7 +45,7 @@ func Init(debug bool) {
 	} else {
 		dbfile = *Config.DBFile
 	}
-	DB = db.NewSqliteDB(dbfile, Config.Debug)
+	DB = db.NewSqliteDB(dbfile, debug)
 }
 
 // 优先级高于配置文件

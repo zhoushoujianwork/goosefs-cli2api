@@ -2,7 +2,6 @@
 # /usr/local/service/goosefs-clusters/g_emr_z98d1f6i/goosefs/bin/goosefs
 bin: "/bin/ls"
 output_dir: "/tmp"
-debug: false
 dingtalk_alert:
   token: ""
 db_file: "/opt/goosefs-cli2api/goosefs.db"

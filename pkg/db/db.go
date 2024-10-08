@@ -16,7 +16,7 @@ func NewSqliteDB(dbFile string, debug bool) DB {
 	dbConfig := &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	}
-	if debug {
+	if !debug {
 		dbConfig.Logger = logger.Default.LogMode(logger.Silent)
 	}
 	db, err := gorm.Open(sqlite.Open(dbFile), dbConfig)

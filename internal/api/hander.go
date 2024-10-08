@@ -16,6 +16,9 @@ import (
 )
 
 func RegisterRoutes(router *gin.Engine) {
+	router.GET("/hc", func(c *gin.Context) {
+		c.String(http.StatusOK, "ok")
+	})
 	a := router.Group("api/v1")
 
 	// add swagger
