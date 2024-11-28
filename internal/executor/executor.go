@@ -27,6 +27,8 @@ type TaskRequest struct {
 // 只允许内部调用，不允许外部传入所有指令，防止执行影响系统的指令
 func addTask(req TaskRequest) (string, error) {
 	taskID := uuid.New().String()
+
+	// 执行
 	cmd := exec.Command(req.Command, req.Args...)
 	log.Infof("taskid: %s, cmd: %s %s", taskID, req.Command, strings.Join(req.Args, " "))
 	outputPath := utils.GenerateTaskID(req.TaskName, taskID)
@@ -39,64 +41,21 @@ func addTask(req TaskRequest) (string, error) {
 
 	err = cmd.Start()
 	if err != nil {
+		log.Errorf("cmd.Start error: %v", err)
+		outFile.Close()
 		return "", err
-	}
-	// 创建 task
-	err = config.DB.CreateGoosefsTask(taskID, models.GoosefsTaskRequest{
-		TaskName: &req.TaskName,
-		Path:     &req.Path,
-		Action:   req.Action,
-	})
-	if err != nil {
-		return "", fmt.Errorf("createGoosefsTask error: %v", err)
 	}
 
 	go func() {
+		// 开启异步携程，等待任务结束后通知
 		cmd.Wait()
 		outFile.Close()
-		// 读取文件行数
-		var successCount, loadedCount int
-
-		defer func() {
-			// 任务结束后更新任务状态
-			err := config.DB.UpdateGoosefsTask(taskID, models.UpdateGoosefsTaskRequest{
-				ExitCode:     tea.String(cmd.ProcessState.String()),
-				SuccessCount: tea.Int(successCount),
-				Total:        tea.Int(loadedCount + successCount)})
-			if err != nil {
-				log.Errorf("UpdateGoosefsPathStatus error: %v", err)
-			}
-		}()
-		file, err := os.Open(outputPath)
+		// 任务结束后更新任务状态
+		err := config.DB.UpdateGoosefsTask(taskID, models.UpdateGoosefsTaskRequest{
+			ExitCode: tea.String(cmd.ProcessState.String()),
+		})
 		if err != nil {
-			successCount = -1
-			log.Errorf("count error: open file error: %v", err)
-			return
-		}
-		defer file.Close()
-		bytes, err := ioutil.ReadAll(file)
-		if err != nil {
-			successCount = -2
-			log.Errorf("count error: read file error: %v", err)
-			return
-		}
-		lines := strings.Split(string(bytes), "\n")
-		for _, line := range lines {
-			if line == "" {
-				continue
-			}
-			switch req.Action {
-			case models.GFSDistributeLoad, models.GFSForceLoad:
-				// 只统计Successfully loaded path的行数
-				if strings.Contains(line, "Successfully loaded path") {
-					successCount++
-				} else if strings.Contains(line, "is already fully loaded in GooseFS") {
-					loadedCount++
-				}
-			default:
-				// 输出结果不需要统计成功失败的
-				continue
-			}
+			log.Errorf("UpdateGoosefsPathStatus error: %v", err)
 		}
 	}()
 
@@ -136,10 +95,8 @@ func GetTaskStatus(filter models.FilterGoosefsTaskRequest) (models.TasksStatus, 
 			CreatedAt: task.CreatedAt,
 		}
 
-		if task.ExitCode != nil && task.SuccessCount != nil {
-			taskinfo.SuccessCount = *task.SuccessCount
+		if task.ExitCode != nil {
 			taskinfo.ExitCode = *task.ExitCode
-			taskinfo.TotalFile = *task.Total
 			// 任务执行完成
 			if GetCmdStatus(*task.ExitCode) == models.TaskStatusSuccess {
 				successTaskCount++
@@ -172,7 +129,6 @@ func GetTaskStatus(filter models.FilterGoosefsTaskRequest) (models.TasksStatus, 
 }
 
 /*
-status只返回成功Successfully内容的服务，其他 path的不通知
 $ cat test_task_name_160d7bf1-0da3-473d-b4c4-29f7c7d37e14.txt
 Allow up to 100 active jobs
 /data-datalake-dataprod-bj-1251949819/deltalake/npd_temp.db/ods_corpdata_pingan_tb_certificate_integrate/20240813_075219_00032_byuem-d4444027-b4ef-4cf5-b3c8-6141b9884e93 loading

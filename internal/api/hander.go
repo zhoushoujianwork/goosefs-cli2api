@@ -31,6 +31,9 @@ func RegisterRoutes(router *gin.Engine) {
 
 	a.POST("/gfs", GoosefsExecute)
 	a.GET("/gfs/report", GooseFSReport)
+
+	// spark-submit
+	a.POST("/spark-submit", SparkSubmit)
 }
 
 // @Summary GetTaskStatus

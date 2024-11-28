@@ -9,6 +9,8 @@ const (
 	GFSDistributeLoad GooseFSAction = "GooseFSDistributeLoad" // 缓存数据，他的依据是 Master 上的 metadata
 	GFSLoadMetadata   GooseFSAction = "GooseFSLoadMetadata"   // 只更新元数据信息，可以更新掉cos上变更的内容
 	GFSList           GooseFSAction = "GooseFSList"
+
+	SparkSubmit GooseFSAction = "SparkSubmit"
 )
 
 type GooseFSExecuteResponse struct {

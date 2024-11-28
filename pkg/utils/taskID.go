@@ -24,6 +24,8 @@ func GenerateTaskID(taskName, uid string) string {
 // FindFiles 根据taskID或taskName在给定目录下找到所有匹配文件路径
 func FindFiles(req models.QueryTaskRequest) ([]string, error) {
 	log.Debugf(tea.Prettify(req))
+
+	// 直接依据规则返回确定文件
 	if req.TaskID != nil && *req.TaskID != "" && req.TaskName != nil && *req.TaskName != "" {
 		return []string{fmt.Sprintf("%s_%s.txt", *req.TaskName, *req.TaskID)}, nil
 	}
