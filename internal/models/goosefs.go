@@ -9,6 +9,7 @@ const (
 	GFSDistributeLoad GooseFSAction = "GooseFSDistributeLoad" // 缓存数据，他的依据是 Master 上的 metadata
 	GFSLoadMetadata   GooseFSAction = "GooseFSLoadMetadata"   // 只更新元数据信息，可以更新掉cos上变更的内容
 	GFSList           GooseFSAction = "GooseFSList"
+	GFSFree           GooseFSAction = "GooseFSFree" // 释放指定 GooseFS 文件/文件夹的缓存数据，该操作不会删除底层存储中的数据。free [-f]<path>
 )
 
 type GooseFSExecuteResponse struct {
@@ -22,8 +23,9 @@ type Result struct {
 }
 
 // 外部请求支持多路径
+// GooseFSAction=GooseFSFree 时候传入 path 为目录，支持多目录
 type GooseFSRequest struct {
-	Action   GooseFSAction `json:"action" binding:"required"` // 必填 0: GooseFSDistributeLoad 1: GooseFSLoadMetadata 2: GooseFSList 3: GooseFSForceLoad
+	Action   GooseFSAction `json:"action" binding:"required"` // 必填 0: GooseFSDistributeLoad 1: GooseFSLoadMetadata 2: GooseFSList 3: GooseFSForceLoad 4: GooseFSFree
 	TaskName *string       `json:"task_name"`                 // 选填，支持提交多个任务到同一个任务标签上
 	Path     []*string     `json:"path" binding:"required"`   // 当 action 为 GooseFSDistributeLoad/GooseFSLoadMetadata/GooseFSList 时必填
 	TimeOut  *int          `json:"timeout"`                   // 当 action 为 GooseFSList 由于没有挂起任务，所以需要指定超时时间 默认 30 秒

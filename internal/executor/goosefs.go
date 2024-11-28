@@ -203,6 +203,23 @@ func List(path string, timeOut int) (string, error) {
 }
 
 /*
+./bin/goosefs fs free [-f]<path>
+释放指定 GooseFS 文件/文件夹的缓存数据，该操作不会删除底层存储中的数据。
+*/
+func Free(paths []*string) error {
+	for _, p := range paths {
+		if p == nil || *p == "" {
+			return fmt.Errorf("path is required, should not be empty")
+		}
+		_, err := runCmd(*config.Config.Bin, []string{"fs", "free", "-f", *p})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+/*
 实时输出
 ./bin/goosefs fsadmin report
 */

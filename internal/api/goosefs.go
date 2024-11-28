@@ -80,6 +80,19 @@ func GoosefsExecute(c *gin.Context) {
 		}
 		c.String(http.StatusOK, output)
 
+	case models.GFSFree:
+
+		if req.Path == nil || *req.Path[0] == "" {
+			c.String(http.StatusBadRequest, "path is required")
+			return
+		}
+		err := executor.Free(req.Path)
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+		c.String(http.StatusOK, "success")
+
 	default:
 		c.String(http.StatusBadRequest, "action not found, only support 0: GooseFSDistributeLoad 1: GooseFSLoadMetadata 2: GooseFSList 3: GooseFSReport")
 		return
