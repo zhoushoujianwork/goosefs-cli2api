@@ -157,18 +157,21 @@ const docTemplate = `{
                 "GooseFSForceLoad",
                 "GooseFSDistributeLoad",
                 "GooseFSLoadMetadata",
-                "GooseFSList"
+                "GooseFSList",
+                "GooseFSFree"
             ],
             "x-enum-comments": {
                 "GFSDistributeLoad": "缓存数据，他的依据是 Master 上的 metadata",
                 "GFSForceLoad": "该步骤执行的是先去 LoadMetadata，然后再去 DistributeLoad，这样彻底更新",
+                "GFSFree": "释放指定 GooseFS 文件/文件夹的缓存数据，该操作不会删除底层存储中的数据。free [-f]\u003cpath\u003e",
                 "GFSLoadMetadata": "只更新元数据信息，可以更新掉cos上变更的内容"
             },
             "x-enum-varnames": [
                 "GFSForceLoad",
                 "GFSDistributeLoad",
                 "GFSLoadMetadata",
-                "GFSList"
+                "GFSList",
+                "GFSFree"
             ]
         },
         "models.GooseFSExecuteResponse": {
@@ -193,7 +196,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "action": {
-                    "description": "必填 0: GooseFSDistributeLoad 1: GooseFSLoadMetadata 2: GooseFSList 3: GooseFSForceLoad",
+                    "description": "必填 0: GooseFSDistributeLoad 1: GooseFSLoadMetadata 2: GooseFSList 3: GooseFSForceLoad 4: GooseFSFree",
                     "allOf": [
                         {
                             "$ref": "#/definitions/models.GooseFSAction"
